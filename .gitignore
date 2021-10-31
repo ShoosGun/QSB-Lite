@@ -1,0 +1,5 @@
+/ServerSide/bin
+/ServerSide/obj
+/ClientSide/bin
+/ClientSide/obj
+.vs
