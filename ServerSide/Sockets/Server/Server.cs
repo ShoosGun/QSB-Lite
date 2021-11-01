@@ -153,9 +153,18 @@ namespace ServerSide.Sockets.Servers
                 SendAll(globalDataBuffer);
 
             //Client Specific Data
+            //TCP
             for (int i =0; i< clients.Count; i++)
             {
                 byte[] clientSpecificBuffer = DynamicPacketIO.GetClientSpecificPacketWriterData(clients[i].ID);
+                if (clientSpecificBuffer.Length > 0)
+                    Send(clientSpecificBuffer, clients[i].ID);
+            }
+            DynamicPacketIO.ResetClientSpecificDataHolder();
+            //UDP
+            for (int i = 0; i < clients.Count; i++)
+            {
+                byte[] clientSpecificBuffer = DynamicPacketIO.GetClientSpecificPacketWriterData(clients[i].ID, false);
                 if (clientSpecificBuffer.Length > 0)
                     Send(clientSpecificBuffer, clients[i].ID);
             }
@@ -239,21 +248,26 @@ namespace ServerSide.Sockets.Servers
         /// </summary>
         /// <param name="shade">The client's in-game representation</param>
         /// <param name="buffer"></param>
-        public void Send(byte[] buffer, string clientID)
+        public void Send(byte[] buffer, string clientID, bool reliable = true)
         {
             if (clientsLookUpTable.ContainsKey(clientID))
-                clientsLookUpTable[clientID].Send(buffer);
+            {
+                if (reliable)
+                    clientsLookUpTable[clientID].Send(buffer);
+                else
+                    clientsLookUpTable[clientID].UnreliableSend(buffer);
+            }
         }
         /// <summary>
         /// Sends a buffer of information to an array of especified Clients. It is faster, to use SendAll if you want to send some information to all connected clients.
         /// </summary>
         /// <param name="shades"></param>
         /// <param name="buffer"></param>
-        public void Send(byte[] buffer, params string[] clientIDs)
+        public void Send(byte[] buffer, bool reliable = true, params string[] clientIDs)
         {
             foreach (string id in clientIDs)
             {
-                Send(buffer, id);
+                Send(buffer, reliable, id);
             }
         }
         /// <summary>
@@ -261,10 +275,15 @@ namespace ServerSide.Sockets.Servers
         /// </summary>
         /// <param name="Exceptions"> The ids of the ones you don't want to send to</param>
         /// <param name="buffer"></param>
-        public void SendAll(byte[] buffer)
+        public void SendAll(byte[] buffer, bool reliable = true)
         {
             foreach (Client c in clients)
-                c.Send(buffer);
+            {
+                if (reliable)
+                    c.Send(buffer);
+                else
+                    c.UnreliableSend(buffer);
+            }
         }
 
         public void Stop()

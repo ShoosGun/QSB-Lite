@@ -10,35 +10,47 @@ namespace ServerSide.Sockets.Servers
         public delegate void ReadPacket(byte[] data, ReceivedPacketData receivedPacketData);
         private Dictionary<int, ReadPacket> ReadPacketHolders;       
 
-        private PacketWriter globalPacketWriter;
-        private Dictionary<string, PacketWriter> clientSpecificPacketWriters;
+        private ReliableAndUnReliableWriters globalPacketWriters;
+
+        private Dictionary<string, ReliableAndUnReliableWriters> clientSpecificPacketWriters;
 
         public DynamicPacketIO()
         {
-            clientSpecificPacketWriters = new Dictionary<string, PacketWriter>();
+            clientSpecificPacketWriters = new Dictionary<string, ReliableAndUnReliableWriters>();
+            globalPacketWriters = new ReliableAndUnReliableWriters();
             ReadPacketHolders = new Dictionary<int, ReadPacket>();
         }
 
-        private byte[] GetAllData(ref PacketWriter packetWriter)
+        private byte[] GetAllData(ref ReliableAndUnReliableWriters packetWriters, bool reliableData = true)
         {
-            if (packetWriter != null)
+            if (reliableData)
             {
-                byte[] data = packetWriter.GetBytes();
-                packetWriter = null;
-                return data;
+                if (packetWriters.ReliablePacketWriter != null)
+                {
+                    byte[] data = packetWriters.ReliablePacketWriter.GetBytes();
+                    packetWriters.ReliablePacketWriter = null;
+                    return data;
+                }
+            }
+            else
+            {
+                if (packetWriters.UnreliablePacketWriter != null)
+                {
+                    byte[] data = packetWriters.UnreliablePacketWriter.GetBytes();
+                    packetWriters.UnreliablePacketWriter = null;
+                    return data;
+                }
             }
             return new byte[]{ };
         }
-        public byte[] GetGlobalPacketWriterData()
+        public byte[] GetGlobalPacketWriterData(bool reliableData = true) => GetAllData(ref globalPacketWriters, reliableData);
+
+        public byte[] GetClientSpecificPacketWriterData(string ClientID, bool reliableData = true)
         {
-            return GetAllData(ref globalPacketWriter);
-        }
-        public byte[] GetClientSpecificPacketWriterData(string ClientID)
-        {
-            if (clientSpecificPacketWriters.TryGetValue(ClientID, out PacketWriter packet))
+            if (clientSpecificPacketWriters.TryGetValue(ClientID, out ReliableAndUnReliableWriters packets))
             {
                 clientSpecificPacketWriters.Remove(ClientID);
-                return GetAllData(ref packet);
+                return GetAllData(ref packets, reliableData);
             }
             return new byte[] { };
         }
@@ -60,27 +72,26 @@ namespace ServerSide.Sockets.Servers
             writer.Write(data.Length);
             writer.Write(data);
         }
-        public void SendPackedData(int HeaderValue, byte[] data, params string[] ClientIDs)
+        public void SendPackedData(int HeaderValue, byte[] data, bool reliableSend = true, params string[] ClientIDs)
         {
             if (ClientIDs.Length == 0)
             {
-                WritePackedData(HeaderValue, data, ref globalPacketWriter);
+                if(reliableSend)
+                    WritePackedData(HeaderValue, data, ref globalPacketWriters.ReliablePacketWriter);
+                else
+                    WritePackedData(HeaderValue, data, ref globalPacketWriters.UnreliablePacketWriter);
                 return;
             }
             for (int i = 0; i < ClientIDs.Length; i++)
             {
                 if (!clientSpecificPacketWriters.ContainsKey(ClientIDs[i]))
-                    clientSpecificPacketWriters.Add(ClientIDs[i], null);
+                    clientSpecificPacketWriters.Add(ClientIDs[i], new ReliableAndUnReliableWriters());
                 
-                if (clientSpecificPacketWriters[ClientIDs[i]] == null)
-                {
-                    clientSpecificPacketWriters[ClientIDs[i]] = new PacketWriter();
-                    clientSpecificPacketWriters[ClientIDs[i]].Write(DateTime.UtcNow);
-                }
-
-                clientSpecificPacketWriters[ClientIDs[i]].Write(HeaderValue);
-                clientSpecificPacketWriters[ClientIDs[i]].Write(data.Length);
-                clientSpecificPacketWriters[ClientIDs[i]].Write(data);
+                if (reliableSend)
+                    WritePackedData(HeaderValue, data, ref clientSpecificPacketWriters[ClientIDs[i]].ReliablePacketWriter);
+                else
+                    WritePackedData(HeaderValue, data, ref clientSpecificPacketWriters[ClientIDs[i]].UnreliablePacketWriter);
+                
             }
         }
 
@@ -154,5 +165,10 @@ namespace ServerSide.Sockets.Servers
             this.SentTime = SentTime;
             this.Latency = Latency;
         }
+    }
+    public class ReliableAndUnReliableWriters
+    {
+        public PacketWriter ReliablePacketWriter = null;
+        public PacketWriter UnreliablePacketWriter = null;
     }
 }

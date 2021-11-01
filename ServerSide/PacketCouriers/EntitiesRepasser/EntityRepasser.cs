@@ -62,7 +62,7 @@ namespace ServerSide.PacketCouriers
             buffer.Write((byte)EntityInitializerHeaders.Instantiate);
             buffer.Write(ownerID);
             buffer.Write(initializationDataWithID);
-            DynamicPacketIO.SendPackedData(HeaderValue, buffer.GetBytes(), clientIds);
+            DynamicPacketIO.SendPackedData(HeaderValue, buffer.GetBytes(), true, clientIds);
             Console.WriteLine("Enviando dado da entidade de {0} (tamanho {1})para os clientes", ownerID, initializationDataWithID.Length);
         }
         private void SendBufferedEntitiesToNewClient(string clientID)

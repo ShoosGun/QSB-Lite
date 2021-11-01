@@ -69,7 +69,7 @@ namespace ServerSide.PacketCouriers
             writer.Write((byte)SIHeaders.CONNECTED);
             writer.Write(id);
 
-            DynamicPacketIO.SendPackedData(HeaderValue, writer.GetBytes(), clientID);
+            DynamicPacketIO.SendPackedData(HeaderValue, writer.GetBytes(), true, clientID);
         }
         private void SendRemovedOwnerID(int id)
         {

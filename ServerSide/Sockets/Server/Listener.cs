@@ -24,8 +24,7 @@ namespace ServerSide.Sockets.Servers
 
         private AllowedConnections AllowedConnections;
         private Socket s;
-
-        //TODO refazer a implementação das sockets usando UDP!
+        
         private const ProtocolType listenerProtocolType = ProtocolType.Tcp;
 
         public Listener(int port, AllowedConnections allowedConnections)

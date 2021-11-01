@@ -20,63 +20,70 @@ namespace ServerSide.Sockets.Clients
             private set;
         }
 
-        private Socket sck;
-
-        //private DateTime startedReceivingTime;
-        //private readonly int receivingLimit;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="accepted"></param>
-        /// <param name="debugger"></param>
-        /// <param name="receivingLimit"> In packets/s </param>
-        public Client(Socket accepted /*, int receivingLimit =  100*/)
+        private Socket reliableSocket;
+        private UdpClient unreliableSocket;
+        
+        public Client(Socket accepted)
         {
             ID = Guid.NewGuid().ToString();
-            sck = accepted;
-            EndPoint = (IPEndPoint)sck.RemoteEndPoint;
+            reliableSocket = accepted;
+            EndPoint = (IPEndPoint)reliableSocket.RemoteEndPoint;
 
-            //startedReceivingTime = DateTime.UtcNow;
-            //this.receivingLimit = receivingLimit;
+            unreliableSocket = new UdpClient(EndPoint);
 
-            sck.BeginReceive(new byte[] { 0 }, 0, 0, 0, callback, null);
+            reliableSocket.BeginReceive(new byte[] { 0 }, 0, 0, 0, ReceiveCallback, null);
+
+            unreliableSocket.BeginReceive(UDPReceiveCallback, EndPoint);
         }
-
-        private int amountOfReceivedPackets = 0;
-        private void callback(IAsyncResult ar)
+        
+        private void ReceiveCallback(IAsyncResult ar)
         {
             try
             {
-                sck.EndReceive(ar);
+                reliableSocket.EndReceive(ar);
                 byte[] buffer = new byte[4];
-                sck.Receive(buffer, 0, 4, 0);
+                reliableSocket.Receive(buffer, 0, 4, 0);
                 int dataSize = BitConverter.ToInt32(buffer, 0);
                 if (dataSize <= 0)
                     throw new SocketException();
                 buffer = new byte[dataSize];
-                int received = sck.Receive(buffer, 0, buffer.Length, 0);
+                int received = reliableSocket.Receive(buffer, 0, buffer.Length, 0);
                 while (received < dataSize)
                 {
-                    received += sck.Receive(buffer, received, dataSize - received, 0);
+                    received += reliableSocket.Receive(buffer, received, dataSize - received, 0);
                 }
                 Received?.Invoke(this, buffer);
-                //TODO reimplementar a maneira de evitar "spam" de pacotes
-                //if( (DateTime.UtcNow - startedReceivingTime).Milliseconds >= 1000)
-                //    amountOfReceivedPackets = 0;
-
-                //else if(amountOfReceivedPackets > receivingLimit)
-                //{
-                //    Thread.Sleep(1000 - (DateTime.UtcNow - startedReceivingTime).Milliseconds); // Esperar até dar um segundo
-                //}
-                sck.BeginReceive(new byte[] { 0 }, 0, 0, 0,callback, null);
+                reliableSocket.BeginReceive(new byte[] { 0 }, 0, 0, 0,ReceiveCallback, null);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Erro no callback de receber dados no Client {0}: {1}", ID, ex.Message);
+                Console.WriteLine("Erro no callback TCP de receber dados no Client {0}: {1}", ID, ex.Message);
                 Disconnected?.Invoke(this);
             }
         }
+        private void UDPReceiveCallback(IAsyncResult ar)
+        {
+            try
+            {
+                IPEndPoint endPoint = (IPEndPoint)ar.AsyncState;
+
+                byte[] buffer = unreliableSocket.EndReceive(ar, ref endPoint);
+
+                if (buffer.Length <= 0)
+                    throw new SocketException();
+                
+                Received?.Invoke(this, buffer);
+
+                unreliableSocket.BeginReceive(UDPReceiveCallback, endPoint);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("(Nao Importante) Erro no callback UDP de receber dados no Client {0}: {1}", ID, ex.Message);
+            }
+        }
+
+        public void UnreliableSend(byte[] buffer) => unreliableSocket.Send(buffer, buffer.Length);
+
         public void Send(byte[] buffer) 
         {
             lock (this)
@@ -84,8 +91,8 @@ namespace ServerSide.Sockets.Clients
                 try
                 {
                     byte[] sizeBuffer = BitConverter.GetBytes(buffer.Length);
-                    sck.Send(sizeBuffer, 0, sizeBuffer.Length, 0);
-                    sck.Send(buffer, 0, buffer.Length, 0);
+                    reliableSocket.Send(sizeBuffer, 0, sizeBuffer.Length, 0);
+                    reliableSocket.Send(buffer, 0, buffer.Length, 0);
                 }
                 catch (Exception ex)
                 {
@@ -95,7 +102,11 @@ namespace ServerSide.Sockets.Clients
         }
         public void Close()
         {
-            sck.Close();
+            reliableSocket.Close();
+            reliableSocket.Dispose();
+            
+            unreliableSocket.Close();
+            unreliableSocket.Dispose();
         }
 
         public event ClientReceivedHandler Received;

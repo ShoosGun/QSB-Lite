@@ -10,14 +10,25 @@ namespace ClientSide.Sockets
     {
         public delegate void ReadPacket(byte[] data, ReceivedPacketData receivedPacketData);
         private Dictionary<int, ReadPacket> ReadPacketHolders = new Dictionary<int, ReadPacket>();
-        private PacketWriter packetWriter;
-        
+        private PacketWriter reliablePacketWriter;
+        private PacketWriter unreliablePacketWriter;
+
+        public byte[] GetAllUnreliableData()
+        {
+            if (unreliablePacketWriter != null)
+            {
+                byte[] data = unreliablePacketWriter.GetBytes();
+                unreliablePacketWriter = null;
+                return data;
+            }
+            return new byte[] { };
+        }
         public byte[] GetAllData()
         {
-            if (packetWriter != null)
+            if (reliablePacketWriter != null)
             {
-                byte[] data = packetWriter.GetBytes();
-                packetWriter = null;
+                byte[] data = reliablePacketWriter.GetBytes();
+                reliablePacketWriter = null;
                 return data;
             }
             return new byte[] { };
@@ -25,16 +36,29 @@ namespace ClientSide.Sockets
 
         public void SendPackedData(int HeaderValue, byte[] data)
         {
-            if (packetWriter == null)
+            if (reliablePacketWriter == null)
             {
-                packetWriter = new PacketWriter();
-                packetWriter.Write(DateTime.UtcNow);//Send packet time
+                reliablePacketWriter = new PacketWriter();
+                reliablePacketWriter.Write(DateTime.UtcNow);//Send packet time
             }
 
-            packetWriter.Write(HeaderValue);
+            reliablePacketWriter.Write(HeaderValue);
 
-            packetWriter.Write(data.Length);
-            packetWriter.Write(data);
+            reliablePacketWriter.Write(data.Length);
+            reliablePacketWriter.Write(data);
+        }
+        public void SendUnreliablePackedData(int HeaderValue, byte[] data)
+        {
+            if (unreliablePacketWriter == null)
+            {
+                unreliablePacketWriter = new PacketWriter();
+                unreliablePacketWriter.Write(DateTime.UtcNow);//Send packet time
+            }
+
+            unreliablePacketWriter.Write(HeaderValue);
+
+            unreliablePacketWriter.Write(data.Length);
+            unreliablePacketWriter.Write(data);
         }
 
         public void ReadReceivedPacket(ref PacketReader packetReader)
