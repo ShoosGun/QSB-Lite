@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -11,19 +10,15 @@ namespace ClientSide.Sockets
     public class Client
     {
         //TODO fazer esse valor ser lido de um arquivo que acompanhe o dll do mod
+        Listener l;
         private const int serverPort = 2121;
-        private Socket reliableServerConnectionSocket;
-        private UdpClient unreliableServerConnectionSocket;
 
-        private string ConnectedServerIP = ""; //se a conecção der certo, gravar para tentar reconectar no futuro caso haja uma desconecção
         public bool Connected { private set; get; }
-        
-        private readonly object packetBuffers_lock = new object();
-        private Queue<byte[]> packetBuffers = new Queue<byte[]>();
-        
-        private bool wasConnected = false;
-        
-        public Client_DynamicPacketIO DynamicPacketIO { get; private set; }
+
+        private readonly object receivedData_lock = new object();
+        private Queue<byte[]> receivedData = new Queue<byte[]>();
+
+        public PacketReceiver packetReceiver { get; private set; }
 
         private static Client CurrentClient = null;
         public static Client GetClient()
@@ -35,108 +30,59 @@ namespace ClientSide.Sockets
         /// 
         /// </summary>
         /// <param name="debugger"></param>
-        public Client(int receivingLimit = 30)
+        public Client()
         {
             if (CurrentClient != null)
                 return;
 
-            Connected = false;
-
-            DynamicPacketIO = new Client_DynamicPacketIO();
-
+            packetReceiver = new PacketReceiver();
             CurrentClient = this;
+
+            Connected = false;
+            Connecting = false;
+
+            l = new Listener();
+            l.OnConnection += L_OnConnection;
+            l.OnFailConnection += L_OnFailConnection;
+            l.OnDisconnection += L_OnDisconnection;
+            l.OnReceiveData += L_OnReceiveData;
         }
 
-        /// <summary>
-        /// Disconected any prior connection before attempting to connect, the attempts happen in another thread
-        /// </summary>
-        /// <param name="IP"></param>
-        /// <param name="timeOut"> In milliseconds. It will wait indefinitely if set to a negative number</param>
-        public void TryConnect(string IP, int timeOut = -1)
+        private void L_OnReceiveData(byte[] dgram)
         {
-            reliableServerConnectionSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            unreliableServerConnectionSocket = new UdpClient(AddressFamily.InterNetwork);// new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-
-            ConnectedServerIP = IP;
-            //Tentar conectar, e se conectar gravar o IP na string
-            //Se for negativo ira esperar para sempre por uma conecção
-
-            UnityEngine.Debug.Log("Tentando Conectar em: " + IP);
-
-            if (timeOut >= 0)
-                new Thread(() =>
-                {
-                    reliableServerConnectionSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(IP), serverPort), ConnectCallback, null).AsyncWaitHandle.WaitOne(timeOut, true);
-                    if (!reliableServerConnectionSocket.Connected)
-                    {
-                        reliableServerConnectionSocket.Close();
-                        ConnectedServerIP = "";
-                    }
-                }).Start();
-            else
-                reliableServerConnectionSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(IP), serverPort), ConnectCallback, null);
+            lock (receivedData_lock)
+            {
+                receivedData.Enqueue(dgram);
+            }
         }
-        private void ConnectCallback(IAsyncResult ar)
+
+        private void L_OnDisconnection()
         {
-            reliableServerConnectionSocket.EndConnect(ar);
+            Connected = false;
+        }
+
+        private void L_OnFailConnection()
+        {
+            Connecting = false;
+            Connected = false;
+        }
+
+        private void L_OnConnection()
+        {
+            Connecting = false;
             Connected = true;
-            
-            reliableServerConnectionSocket.BeginReceive(new byte[] { 0 }, 0, 0, SocketFlags.None, ReceiveCallback, null);
-
-            IPEndPoint tempIPEndPoint = new IPEndPoint(IPAddress.Parse(ConnectedServerIP), serverPort);
-            unreliableServerConnectionSocket.Connect(tempIPEndPoint);
-            unreliableServerConnectionSocket.BeginReceive(UDPReceiveCallback, tempIPEndPoint);
         }
-        private void ReceiveCallback(IAsyncResult ar)
+        private bool Connecting = false;
+        public void Connect(string IP, int port = serverPort)
         {
-            try
+            if (!Connecting && !Connected)
             {
-                reliableServerConnectionSocket.EndReceive(ar);
-                //Tratamento de dados
-                byte[] buffer = new byte[4];
-                reliableServerConnectionSocket.Receive(buffer, 0, 4, 0);
-                int dataSize = BitConverter.ToInt32(buffer, 0);
-                if (dataSize <= 0)
-                    throw new SocketException();
-
-                buffer = new byte[dataSize];
-                int received = reliableServerConnectionSocket.Receive(buffer, 0, buffer.Length, 0);
-                while (received < dataSize)
-                {
-                    received += reliableServerConnectionSocket.Receive(buffer, received, dataSize - received, 0);
-                }
-
-                lock (packetBuffers_lock)
-                    packetBuffers.Enqueue(buffer);
-
-                reliableServerConnectionSocket.BeginReceive(new byte[] { 0 }, 0, 0, 0, ReceiveCallback, null);
-            }
-            catch (Exception ex)
-            {
-                Connected = false;
-            }
-        }
-        private void UDPReceiveCallback(IAsyncResult ar)
-        {
-            try
-            {
-                IPEndPoint endPoint = (IPEndPoint)ar.AsyncState;
-                
-                byte[] buffer = unreliableServerConnectionSocket.EndReceive(ar, ref endPoint);
-                
-                if (buffer.Length <= 0)
-                    throw new SocketException();
-                
-                lock (packetBuffers_lock)
-                    packetBuffers.Enqueue(buffer);
-
-                unreliableServerConnectionSocket.BeginReceive(UDPReceiveCallback, endPoint);
-            }
-            catch
-            {
+                Connecting = true;
+                l.TryConnect(IP, port);
             }
         }
 
+        private bool wasConnected = false;
         public void Update()
         {
             if (Connected)
@@ -147,29 +93,20 @@ namespace ClientSide.Sockets
                     wasConnected = true;
                     Connection?.Invoke();
                 }
-                //Using TCP
-                byte[] buffer = DynamicPacketIO.GetAllData();
-                if (buffer.Length > 0)
-                    Send(buffer);
-
-                //Using UDP
-                buffer = DynamicPacketIO.GetAllUnreliableData();
-                if (buffer.Length > 0)
-                    unreliableServerConnectionSocket.Send(buffer, buffer.Length);
-
+                
                 //Ler dados
-                bool packetBuffers_NotLocked = Monitor.TryEnter(packetBuffers_lock, 10);
+                bool packetBuffers_NotLocked = Monitor.TryEnter(receivedData_lock, 10);
                 try
                 {
-                    if (packetBuffers_NotLocked && packetBuffers.Count > 0)
+                    int amountOfDGrams = receivedData.Count;
+                    for (int i = 0; i < amountOfDGrams; i++)
                     {
-                        ReceiveData(packetBuffers); //We could use Dequeue inside ReceiveData
-                        packetBuffers.Clear();
+                        ReceiveData(receivedData.Dequeue());
                     }
                 }
                 finally
                 {
-                    Monitor.Exit(packetBuffers_lock);
+                    Monitor.Exit(receivedData_lock);
                 }
             }
             else if (wasConnected)
@@ -179,49 +116,35 @@ namespace ClientSide.Sockets
                 Disconnection?.Invoke();
             }
         }
-        private void ReceiveData(Queue<byte[]> packets)
+        private byte[] MakeDataWithHeader(byte[] data, int header)
         {
-            foreach(byte[] data in packets)
+            byte[] dataWithHeader = new byte[4 + 8 + data.Length];
+            Array.Copy(BitConverter.GetBytes(header), 0, dataWithHeader, 0, 4); //Header
+            Array.Copy(BitConverter.GetBytes(DateTime.UtcNow.ToBinary()), 0, dataWithHeader, 4, 8); //Send Time
+            Array.Copy(data, 0, dataWithHeader, 12, data.Length);
+            return dataWithHeader;
+        }
+        public bool Send(byte[] data, int header) => l.Send(MakeDataWithHeader(data, header));
+
+        private void ReceiveData(byte[] dgram)
+        {
+            PacketReader packet = new PacketReader(dgram);
+            try
             {
-                if (data.Length > 0)
-                {
-                    PacketReader packet = new PacketReader(data);
-                    try
-                    {
-                        DynamicPacketIO.ReadReceivedPacket(ref packet);
-                    }
-                    catch (Exception ex)
-                    {
-                        UnityEngine.Debug.Log($"Erro ao ler dados do servidor: {ex.Source} | {ex.Message}");
-                    }
-                }
+                int Header = packet.ReadInt32();
+                DateTime sendTime = packet.ReadDateTime();
+                ReceivedPacketData receivedPacketData = new ReceivedPacketData(sendTime, (DateTime.UtcNow - sendTime).Milliseconds);
+
+                packetReceiver.ReadReceivedPacket(ref packet, Header, receivedPacketData);
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.Log($"Erro ao ler dados do servidor: {ex.Source} | {ex.Message}");                
             }
         }
-        private void Send(byte[] data)
+        public void Disconnect()
         {
-            lock (this) //Será que isso ajuda? Sla, mas não quero que crashe de novo, se quiser tire esse lock e teste ai
-            {
-                try
-                {   //Bruh momiento (pf não inverter na próxima vez, más lembranças)
-                    byte[] sizeBuffer = BitConverter.GetBytes(data.Length);
-                    reliableServerConnectionSocket.Send(sizeBuffer, 0, sizeBuffer.Length, 0);
-                    reliableServerConnectionSocket.Send(data, 0, data.Length, 0);
-                }
-                catch (Exception ex)
-                {
-                    UnityEngine.Debug.Log("Erro ao enviar dados >> " + ex.Message);
-                }
-            }
-        }
-        public void Close()
-        {
-            if(reliableServerConnectionSocket != null)
-                reliableServerConnectionSocket.Close();
-
-            if (unreliableServerConnectionSocket != null)
-                unreliableServerConnectionSocket.Close();
-
-            CurrentClient = null;
+            l.Disconnect();
         }
 
         public event ConnectionHandler Connection;

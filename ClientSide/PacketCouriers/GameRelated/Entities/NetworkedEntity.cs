@@ -57,6 +57,7 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
                 {
                     scriptSerializeBuffer.Write(networkedScript.Key);
                     networkedScript.Value.OnSerialize(ref scriptSerializeBuffer);
+                    serializedScripts++;
                 }
             }
 

@@ -9,6 +9,7 @@ using ClientSide.PacketCouriers.GameRelated.Entities;
 using ClientSide.PacketCouriers;
 using System.Collections;
 using System;
+using ClientSide.EntityScripts.TransfromSync;
 
 namespace ClientSide
 {
@@ -41,9 +42,12 @@ namespace ClientSide
         string IP = "127.0.0.1";
         public void OnGUI()
         {
-            IP = GUI.PasswordField(new Rect(10, 10, 150, 25), IP, "*"[0]);
-            if (GUI.Button(new Rect(10, 35, 150, 25), "Conectar para esse IP"))
-                _clientSide.TryConnect(IP, 1000);
+            if (!_clientSide.Connected)
+            {
+                IP = GUI.PasswordField(new Rect(10, 10, 150, 25), IP, "*"[0]);
+                if (GUI.Button(new Rect(10, 35, 150, 25), "Conectar para esse IP"))
+                    _clientSide.Connect(IP, 1000);
+            }
         }
         private void FixedUpdate()
         {
@@ -51,7 +55,7 @@ namespace ClientSide
         }
         private void OnDestroy()
         {
-            _clientSide.Close();
+            _clientSide.Disconnect();
         }
 
         private void ServerInteraction_OnReceiveOwnerID()
@@ -67,7 +71,7 @@ namespace ClientSide
 
                 if (entity == null)
                 {
-                    EntityInitializer.client_EntityInitializer.InstantiateEntity("CuB0", GameObject.Find("Camera").transform.position + GameObject.Find("Camera").transform.forward*2f, Quaternion.identity, EntityInitializer.InstantiateType.Buffered);
+                    EntityInitializer.client_EntityInitializer.InstantiateEntity("CuB0", GameObject.Find("Camera").transform.position + GameObject.Find("Camera").transform.forward * 2f, Quaternion.identity, EntityInitializer.InstantiateType.Buffered, (byte)SyncTransform.All, (byte)ReferenceFrames.GlobalRoot);
                 }
                 else
                 {
@@ -85,6 +89,9 @@ namespace ClientSide
             go.transform.parent = GameObject.Find("Camera").transform;
 
             NetworkedEntity networkedEntity = go.AddComponent<NetworkedEntity>();
+            TransformEntitySync transformEntitySync = networkedEntity.AddEntityScript<TransformEntitySync>();
+            transformEntitySync.syncTransformType = (SyncTransform)InitializationData[0];
+            transformEntitySync.referenceFrame = (ReferenceFrames)InitializationData[1];
             entity = networkedEntity;
             return networkedEntity;
         }

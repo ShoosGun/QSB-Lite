@@ -36,8 +36,7 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
     class EntityInitializer : MonoBehaviour
     {
         public static EntityInitializer client_EntityInitializer;
-
-        public Client_DynamicPacketIO DynamicPacketIO { get; private set; }
+        
         const string EI_LOCALIZATION_STRING = "EntityInitializer";
         public int HeaderValue { get; private set; }
 
@@ -49,10 +48,8 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
                 return;
             }
             client_EntityInitializer = this;
-
-            DynamicPacketIO = Client.GetClient().DynamicPacketIO;
-            HeaderValue = DynamicPacketIO.AddPacketReader(EI_LOCALIZATION_STRING, ReadPacket);
             
+            HeaderValue = Client.GetClient().packetReceiver.AddPacketReader(EI_LOCALIZATION_STRING, ReadPacket);            
             ServerInteraction.OnServerRemoveOwnerID += ServerInteraction_OnServerRemoveOwnerID;
         }
 
@@ -88,7 +85,7 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
                 buffer.Write(position);
                 buffer.Write(rotation);
 
-                DynamicPacketIO.SendPackedData(HeaderValue, buffer.GetBytes());
+                Client.GetClient().Send(buffer.GetBytes(), HeaderValue);
             }
         }
 
@@ -111,7 +108,7 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
                 PacketWriter buffer = new PacketWriter();
                 buffer.Write((byte)EntityInitializerHeaders.Remove);
                 buffer.Write(networkedEntity.id);
-                DynamicPacketIO.SendPackedData(HeaderValue, buffer.GetBytes());
+                Client.GetClient().Send(buffer.GetBytes(), HeaderValue);
             }
         }
         
@@ -171,7 +168,7 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
                 writer.Write(amountOfEntitiesThatWrote);
                 writer.Write(postFixWriter.GetBytes());
 
-                DynamicPacketIO.SendPackedData(HeaderValue, writer.GetBytes());
+                Client.GetClient().Send(writer.GetBytes(), HeaderValue);
             }
         }
         public void ReadEntityScriptsOnDeserialization(ref PacketReader reader, ReceivedPacketData receivedPacketData)
@@ -182,13 +179,14 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
             {
                 int entityId = reader.ReadInt32();
                 byte[] data = reader.ReadByteArray();
-                InstantiadableGameObjectsPrefabHub.ownersDictionary.GetNetworkedEntity(ownerID, entityId).OnDeserializeEntity(data, receivedPacketData);
+                //if(ownerID != ServerInteraction.GetOwnerID())
+                if (InstantiadableGameObjectsPrefabHub.ownersDictionary.TryGetNetworkedEntity(ownerID, entityId, out NetworkedEntity entity))
+                    entity.OnDeserializeEntity(data, receivedPacketData);
             }
         }
 
-        public void ReadPacket(byte[] data, ReceivedPacketData receivedPacketData)
+        public void ReadPacket(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
-            PacketReader reader = new PacketReader(data);
             switch ((EntityInitializerHeaders)reader.ReadByte())
             {
                 case EntityInitializerHeaders.Instantiate:

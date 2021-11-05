@@ -6,6 +6,16 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
     public class NetworkedEntityDictionary  : KeyedCollection<int, NetworkedEntity>
     {
         protected override int GetKeyForItem(NetworkedEntity entity) => entity.id;
+        public bool TryGetValue(int key, out NetworkedEntity value)
+        {
+            value = null;
+            if (Contains(key))
+            {
+                value = this[key];
+                return true;
+            }
+            return false;
+        }
     }
     public class NetworkedEntityOwnerDictionary : Dictionary<int, NetworkedEntityDictionary>
     {
@@ -21,6 +31,10 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
         public NetworkedEntity GetNetworkedEntity(int ownerID, int id)
         {
             return this[ownerID][id];
+        }
+        public bool TryGetNetworkedEntity(int ownerID, int id, out NetworkedEntity entity)
+        {
+            return this[ownerID].TryGetValue(id, out entity);
         }
 
         public bool ContainsEntity(NetworkedEntity networkedEntity)

@@ -8,7 +8,7 @@ namespace ServerSide.PacketCouriers
     {
         const string SI_LOCALIZATION_STRING = "ServerInteraction";
         public int HeaderValue { get; private set; }
-        private DynamicPacketIO DynamicPacketIO;
+        private Server server;
 
         private const int MAX_CLIENT_AMOUT = 10;
         private ClientOwnerIdsGenerator ownerIdsGenerator;
@@ -19,11 +19,12 @@ namespace ServerSide.PacketCouriers
 
         public ServerInteraction(Server server)
         {
-            server.NewConnectionID += Server_NewConnectionID;
-            server.DisconnectionID += Server_DisconnectionID;
+            this.server = server;
 
-            DynamicPacketIO = server.DynamicPacketIO;
-            HeaderValue = DynamicPacketIO.AddPacketReader(SI_LOCALIZATION_STRING, ReadPacket);
+            server.OnNewClient += Server_NewConnectionID;
+            server.OnClientDisconnection += Server_DisconnectionID;
+            
+            HeaderValue = server.packetReceiver.AddPacketReader(SI_LOCALIZATION_STRING, ReadPacket);
 
             ownerIdsGenerator = new ClientOwnerIdsGenerator(MAX_CLIENT_AMOUT);
 
@@ -69,7 +70,7 @@ namespace ServerSide.PacketCouriers
             writer.Write((byte)SIHeaders.CONNECTED);
             writer.Write(id);
 
-            DynamicPacketIO.SendPackedData(HeaderValue, writer.GetBytes(), true, clientID);
+            server.Send(writer.GetBytes(), HeaderValue, clientID);
         }
         private void SendRemovedOwnerID(int id)
         {
@@ -77,10 +78,10 @@ namespace ServerSide.PacketCouriers
             writer.Write((byte)SIHeaders.OWNER_ID_REMOVED);
             writer.Write(id);
 
-            DynamicPacketIO.SendPackedData(HeaderValue, writer.GetBytes());
+            server.SendAll(writer.GetBytes(), HeaderValue);
         }
 
-        private void ReadPacket(byte[] data, ReceivedPacketData receivedPacketData)
+        private void ReadPacket(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
         }
 

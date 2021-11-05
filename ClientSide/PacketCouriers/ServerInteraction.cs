@@ -8,8 +8,7 @@ namespace ClientSide.PacketCouriers
     public class ServerInteraction : MonoBehaviour
     {
         private static ServerInteraction serverInteractionInstance;
-
-        private Client_DynamicPacketIO DynamicPacketIO;
+        
         const string SI_LOCALIZATION_STRING = "ServerInteraction";
         public int HeaderValue { get; private set; }
 
@@ -29,13 +28,11 @@ namespace ClientSide.PacketCouriers
                 return;
             }
             serverInteractionInstance = this;
-
-            DynamicPacketIO = Client.GetClient().DynamicPacketIO;
-            HeaderValue = DynamicPacketIO.AddPacketReader(SI_LOCALIZATION_STRING, ReadPacket);
+            
+            HeaderValue = Client.GetClient().packetReceiver.AddPacketReader(SI_LOCALIZATION_STRING, ReadPacket);
         }
-        private void ReadPacket(byte[] data, ReceivedPacketData receivedPacketData)
+        private void ReadPacket(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
-            PacketReader reader = new PacketReader(data);
             switch ((SIHeaders)reader.ReadByte())
             {
                 case SIHeaders.CONNECTED:

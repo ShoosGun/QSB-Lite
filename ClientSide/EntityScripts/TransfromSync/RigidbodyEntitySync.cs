@@ -26,5 +26,12 @@ namespace ClientSide.EntityScripts.TransfromSync
             if (syncRigidbodyType == SyncRigidbody.AngularMomentumOnly || syncRigidbodyType == SyncRigidbody.Both)
                 rigidbody.angularVelocity = reader.ReadVector3();
         }
+        public override void OnSerialize(ref PacketWriter writer)
+        {
+            if (syncRigidbodyType == SyncRigidbody.VelocityOnly || syncRigidbodyType == SyncRigidbody.Both)
+                writer.Write(rigidbody.velocity);
+            if (syncRigidbodyType == SyncRigidbody.AngularMomentumOnly || syncRigidbodyType == SyncRigidbody.Both)
+                writer.Write(rigidbody.angularVelocity);
+        }
     }
 }

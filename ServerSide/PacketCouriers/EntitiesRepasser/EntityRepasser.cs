@@ -10,7 +10,7 @@ namespace ServerSide.PacketCouriers
     {
         const string EI_LOCALIZATION_STRING = "EntityInitializer";
         public int HeaderValue { get; private set; }
-        private DynamicPacketIO DynamicPacketIO;
+        private Server server;
 
         private Dictionary<string, EntityOwnerBuffer> entityBuffer;
 
@@ -18,12 +18,13 @@ namespace ServerSide.PacketCouriers
 
         public EntityRepasser(Server server, ServerInteraction serverInteraction)
         {
-            DynamicPacketIO = server.DynamicPacketIO;
-            HeaderValue = DynamicPacketIO.AddPacketReader(EI_LOCALIZATION_STRING, ReadPacket);
+            this.server = server;
+
+            HeaderValue = server.packetReceiver.AddPacketReader(EI_LOCALIZATION_STRING, ReadPacket);
 
             this.serverInteraction = serverInteraction;
             this.serverInteraction.OnAfterSendOwnerID += ServerInteraction_OnAfterSendOwnerID;
-            server.DisconnectionID += Server_DisconnectionID;
+            server.OnClientDisconnection += Server_DisconnectionID;
 
             entityBuffer = new Dictionary<string, EntityOwnerBuffer>();
         }
@@ -56,13 +57,16 @@ namespace ServerSide.PacketCouriers
                 TransmitEntityInitializationData(ownerBuffer.ClientData.OwnerID, initializationDataWithID);
             }
         }
-        public void TransmitEntityInitializationData(int ownerID, byte[] initializationDataWithID, params string[] clientIds)
+        public void TransmitEntityInitializationData(int ownerID, byte[] initializationDataWithID, string clientId = "")
         {
             PacketWriter buffer = new PacketWriter();
             buffer.Write((byte)EntityInitializerHeaders.Instantiate);
             buffer.Write(ownerID);
             buffer.Write(initializationDataWithID);
-            DynamicPacketIO.SendPackedData(HeaderValue, buffer.GetBytes(), true, clientIds);
+            if (clientId.Length > 1)
+                server.Send(buffer.GetBytes(), HeaderValue, clientId);
+            else
+                server.SendAll(buffer.GetBytes(), HeaderValue);
             Console.WriteLine("Enviando dado da entidade de {0} (tamanho {1})para os clientes", ownerID, initializationDataWithID.Length);
         }
         private void SendBufferedEntitiesToNewClient(string clientID)
@@ -77,19 +81,18 @@ namespace ServerSide.PacketCouriers
             }
         }
 
-        public void ReadPacket(byte[] data, ReceivedPacketData receivedPacketData)
+        public void ReadPacket(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
-            PacketReader reader = new PacketReader(data);
             switch ((EntityInitializerHeaders)reader.ReadByte())
             {
                 case EntityInitializerHeaders.Instantiate:
-                    TransmitAddEntity((InstantiateType)reader.ReadByte(), receivedPacketData, data);
+                    //TransmitAddEntity((InstantiateType)reader.ReadByte(), receivedPacketData, data);
                     break;
                 case EntityInitializerHeaders.Remove:
                     TransmitRemoveEntity(ref reader, receivedPacketData);
                     break;
                 case EntityInitializerHeaders.EntitySerialization:
-                    TransmitEntityScriptsOnDeserialization(ref reader, receivedPacketData, data);
+                    //TransmitEntityScriptsOnDeserialization(ref reader, receivedPacketData, data);
                     break;
             }
         }
@@ -103,7 +106,7 @@ namespace ServerSide.PacketCouriers
                 buffer.Write(ownerID);
                 //Skip the first byte used by the header
                 buffer.Write(data, 1, data.Length - 1);
-                DynamicPacketIO.SendPackedData(HeaderValue, buffer.GetBytes());
+                server.SendAll(buffer.GetBytes(), HeaderValue);
             }
         }
         private void TransmitRemoveEntity(ref PacketReader reader, ReceivedPacketData receivedPacketData)
@@ -117,7 +120,7 @@ namespace ServerSide.PacketCouriers
                 buffer.Write((byte)EntityInitializerHeaders.Remove);
                 buffer.Write(ownerBuffer.ClientData.OwnerID);
                 buffer.Write(entityID);
-                DynamicPacketIO.SendPackedData(HeaderValue, buffer.GetBytes());
+                server.SendAll(buffer.GetBytes(), HeaderValue);
                 Console.WriteLine("Entidade de {0}, ID {1}, foi removida", receivedPacketData.ClientID, entityID);
             }
         }
