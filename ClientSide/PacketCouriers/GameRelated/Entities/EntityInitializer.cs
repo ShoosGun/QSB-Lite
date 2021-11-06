@@ -51,8 +51,14 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
             
             HeaderValue = Client.GetClient().packetReceiver.AddPacketReader(EI_LOCALIZATION_STRING, ReadPacket);            
             ServerInteraction.OnServerRemoveOwnerID += ServerInteraction_OnServerRemoveOwnerID;
+            Client.GetClient().Disconnection += EntityInitializer_Disconnection;
         }
 
+
+        private void EntityInitializer_Disconnection()
+        {
+            InstantiadableGameObjectsPrefabHub.ownersDictionary.ClearAndDestroyAllEntites();
+        }
         private void ServerInteraction_OnServerRemoveOwnerID(int removedOwnerID)
         {
             InstantiadableGameObjectsPrefabHub.ownersDictionary.RemoveAndDestroyOwnerIDEntites(removedOwnerID);

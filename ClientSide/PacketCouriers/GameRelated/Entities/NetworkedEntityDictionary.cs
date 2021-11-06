@@ -53,6 +53,16 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
             entities.Remove(networkedEntity);
         }
 
+        public void ClearAndDestroyAllEntites()
+        {
+            foreach (var entities in Values)
+            {
+                for (int i = 0; i < entities.Count; i++)
+                    UnityEngine.Object.Destroy(entities[i].gameObject);
+            }
+            Clear();
+        }
+
         public void RemoveAndDestroyOwnerIDEntites(int ownerID)
         {
             if (!TryGetValue(ownerID, out var entities))
