@@ -81,9 +81,13 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
 
                 buffer.Write(id);
                 buffer.Write(prefabName);
-                buffer.WriteAsObjectArray(data);
-                buffer.Write(position);
-                buffer.Write(rotation);
+
+                PacketWriter initializationData = new PacketWriter();
+                initializationData.WriteAsObjectArray(data);
+                initializationData.Write(position);
+                initializationData.Write(rotation);
+
+                buffer.WriteAsArray(initializationData.GetBytes());
 
                 Client.GetClient().Send(buffer.GetBytes(), HeaderValue);
             }
@@ -165,8 +169,10 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
             {
                 PacketWriter writer = new PacketWriter();
                 writer.Write((byte)EntityInitializerHeaders.EntitySerialization);
-                writer.Write(amountOfEntitiesThatWrote);
-                writer.Write(postFixWriter.GetBytes());
+                PacketWriter desirializationData = new PacketWriter();
+                desirializationData.Write(amountOfEntitiesThatWrote);
+                desirializationData.Write(postFixWriter.GetBytes());
+                writer.WriteAsArray(desirializationData.GetBytes());
 
                 Client.GetClient().Send(writer.GetBytes(), HeaderValue);
             }

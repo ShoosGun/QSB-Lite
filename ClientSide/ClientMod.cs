@@ -46,7 +46,7 @@ namespace ClientSide
             {
                 IP = GUI.PasswordField(new Rect(10, 10, 150, 25), IP, "*"[0]);
                 if (GUI.Button(new Rect(10, 35, 150, 25), "Conectar para esse IP"))
-                    _clientSide.Connect(IP, 1000);
+                    _clientSide.Connect(IP, 2121);
             }
         }
         private void FixedUpdate()

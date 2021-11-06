@@ -38,36 +38,35 @@ namespace ServerSide.PacketCouriers
         {
             entityBuffer.Remove(clientID);
         }
-        private void TransmitAddEntity(InstantiateType instantiateType, ReceivedPacketData receivedPacketData, byte[] data)
+        private void TransmitAddEntity(ReceivedPacketData receivedPacketData, ref PacketReader reader)
         {
-            //No byte[] data:
-            //0 -> Header
-            //1 -> InstantiateType
-            //[2,6] -> ID
-            //(6,n] -> Resto da data
             if (entityBuffer.TryGetValue(receivedPacketData.ClientID, out EntityOwnerBuffer ownerBuffer))
             {
-                int id = BitConverter.ToInt32(data, 2);
-                byte[] initializationDataWithID = new byte[data.Length - 2];
-                Array.Copy(data, 2, initializationDataWithID, 0, initializationDataWithID.Length);
+                InstantiateType instantiateType = (InstantiateType)reader.ReadByte();
+                int id = reader.ReadInt32();
+                string prefab = reader.ReadString();
+                byte[] initializationData = reader.ReadByteArray();
 
                 if (instantiateType == InstantiateType.Buffered && !ownerBuffer.entityDatas.Contains(id))
-                    ownerBuffer.entityDatas.Add(new BufferedEntityData(id, initializationDataWithID));
+                    ownerBuffer.entityDatas.Add(new BufferedEntityData(id, prefab, initializationData));
 
-                TransmitEntityInitializationData(ownerBuffer.ClientData.OwnerID, initializationDataWithID);
+                TransmitEntityInitializationData(ownerBuffer.ClientData.OwnerID, id, prefab, initializationData);
             }
         }
-        public void TransmitEntityInitializationData(int ownerID, byte[] initializationDataWithID, string clientId = "")
+        public void TransmitEntityInitializationData(int ownerID, int id, string prefab, byte[] initializationData, string clientId = "")
         {
             PacketWriter buffer = new PacketWriter();
             buffer.Write((byte)EntityInitializerHeaders.Instantiate);
             buffer.Write(ownerID);
-            buffer.Write(initializationDataWithID);
-            if (clientId.Length > 1)
+            buffer.Write(id);
+            buffer.Write(prefab);
+            buffer.Write(initializationData);
+            if (!string.IsNullOrEmpty(clientId))
                 server.Send(buffer.GetBytes(), HeaderValue, clientId);
             else
                 server.SendAll(buffer.GetBytes(), HeaderValue);
-            Console.WriteLine("Enviando dado da entidade de {0} (tamanho {1})para os clientes", ownerID, initializationDataWithID.Length);
+
+            Console.WriteLine("Enviando dado da entidade de {0} (ID {1} Prefab {2}) (tamanho {3}) para os clientes", ownerID, id, prefab, initializationData.Length);
         }
         private void SendBufferedEntitiesToNewClient(string clientID)
         {
@@ -76,7 +75,7 @@ namespace ServerSide.PacketCouriers
                 EntityOwnerBuffer buffer = entities.Value;
                 foreach (var entity in buffer.entityDatas)
                 {
-                    TransmitEntityInitializationData(buffer.ClientData.OwnerID, entity.initializationData, clientID);
+                    TransmitEntityInitializationData(buffer.ClientData.OwnerID, entity.ID, entity.Prefab, entity.InitializationData, clientID);
                 }
             }
         }
@@ -86,26 +85,25 @@ namespace ServerSide.PacketCouriers
             switch ((EntityInitializerHeaders)reader.ReadByte())
             {
                 case EntityInitializerHeaders.Instantiate:
-                    //TransmitAddEntity((InstantiateType)reader.ReadByte(), receivedPacketData, data);
+                    TransmitAddEntity(receivedPacketData, ref reader);
                     break;
                 case EntityInitializerHeaders.Remove:
                     TransmitRemoveEntity(ref reader, receivedPacketData);
                     break;
                 case EntityInitializerHeaders.EntitySerialization:
-                    //TransmitEntityScriptsOnDeserialization(ref reader, receivedPacketData, data);
+                    TransmitEntityScriptsOnDeserialization(ref reader, receivedPacketData);
                     break;
             }
         }
         
-        private void TransmitEntityScriptsOnDeserialization(ref PacketReader reader, ReceivedPacketData receivedPacketData, byte[] data)
+        private void TransmitEntityScriptsOnDeserialization(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
             if (serverInteraction.TryGetOwnerID(receivedPacketData.ClientID, out int ownerID))
             {
                 PacketWriter buffer = new PacketWriter();
                 buffer.Write((byte)EntityInitializerHeaders.EntitySerialization);
                 buffer.Write(ownerID);
-                //Skip the first byte used by the header
-                buffer.Write(data, 1, data.Length - 1);
+                buffer.Write(reader.ReadByteArray());
                 server.SendAll(buffer.GetBytes(), HeaderValue);
             }
         }

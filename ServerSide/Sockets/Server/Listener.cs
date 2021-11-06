@@ -77,7 +77,8 @@ namespace ServerSide.Sockets.Servers
             {
                 byte[] datagramBuffer = (byte[])ar.AsyncState;
                 int datagramSize = s.EndReceiveFrom(ar, ref sender);
-
+                //Erro gerado quando um cliente se desconecta, tentar refazer isso (?) e chamar BeginReceiveFrom novamente
+ 
                 if (datagramSize > 0)
                 {
                     switch ((PacketTypes)datagramBuffer[0])
@@ -159,7 +160,7 @@ namespace ServerSide.Sockets.Servers
             //Se o cliente está mesmo conectado então enviar que desconectou mesmo e uma verificação de tal fato
             if (Clients.ContainsValue(sender))
             {
-                var keyValuePair = Clients.First((pair) => pair.Value == sender);
+                var keyValuePair = Clients.First((pair) => pair.Value.Equals(sender));
                 Clients.Remove(keyValuePair.Key);
                 OnClientDisconnection?.Invoke(keyValuePair.Key);
 
@@ -173,7 +174,7 @@ namespace ServerSide.Sockets.Servers
             //Se o cliente está mesmo conectado então podemos receber dados dele
             if (Clients.ContainsValue(sender))
             {
-                var keyValuePair = Clients.First((pair) => pair.Value == sender);
+                var keyValuePair = Clients.First((pair) => pair.Value.Equals(sender));
                 byte[] treatedDGram = new byte[dgram.Length - 1];
                 Array.Copy(dgram, 1, treatedDGram, 0, treatedDGram.Length);
                 OnClientReceivedData?.Invoke(treatedDGram, keyValuePair.Key);

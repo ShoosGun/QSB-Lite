@@ -20,11 +20,13 @@ namespace ServerSide.PacketCouriers
     public struct BufferedEntityData
     {
         public int ID;
-        public byte[] initializationData;
-        public BufferedEntityData(int ID, byte[] initializationData)
+        public string Prefab;
+        public byte[] InitializationData;
+        public BufferedEntityData(int ID, string prefab, byte[] initializationData)
         {
             this.ID = ID;
-            this.initializationData = initializationData;
+            Prefab = prefab;
+            InitializationData = initializationData;
         }
     }
 }
