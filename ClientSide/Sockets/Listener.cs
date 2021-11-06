@@ -16,13 +16,14 @@ namespace ClientSide.Sockets
         private Socket s;
         private const int DATAGRAM_MAX_SIZE = 1284;
 
+        private bool Connecting;
         private bool Connected;
         private object Connected_LOCK = new object();
 
         public Listener()
         {
-            s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            s.Bind(new IPEndPoint(IPAddress.Any, 0));
+            Connecting = false;
+            Connected = false;
         }
 
         /// <summary>
@@ -31,21 +32,30 @@ namespace ClientSide.Sockets
         /// <param name="IP"></param>
         public void TryConnect(string IP, int port)
         {
+            lock (Connected_LOCK)
+            {
+                if (Connecting || Connected)
+                    return;
+
+                Connecting = true;
+            }
+
+            s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            s.Bind(new IPEndPoint(IPAddress.Any, 0));
+
             ServerEndPoint = new IPEndPoint(IPAddress.Parse(IP), port);
             s.Connect(ServerEndPoint);
-
             byte[] connectionRequestBuffer = BitConverter.GetBytes((byte)PacketTypes.CONNECTION);
             s.SendTo(connectionRequestBuffer, ServerEndPoint);
 
             UnityEngine.Debug.Log(string.Format("Tentando Conectar em: {0}:{1}", IP, port));
-
-            Connected = false;
-
+            
             new Thread(() =>
             {
                 Thread.Sleep(MAX_WAITING_TIME_FOR_VERIFICATION);
                 lock (Connected_LOCK)
                 {
+                    Connecting = false;
                     if (!Connected)
                     {
                         s.Close();
@@ -157,11 +167,13 @@ namespace ClientSide.Sockets
             {
                 if (!Connected)
                     return;
+                Connected = false;
             }
 
             byte[] disconnectionBuffer = BitConverter.GetBytes((byte)PacketTypes.DISCONNECTION);
             s.SendTo(disconnectionBuffer, ServerEndPoint);
 
+            OnDisconnection?.Invoke();
             s.Close();
         }
         

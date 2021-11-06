@@ -48,6 +48,11 @@ namespace ClientSide
                 if (GUI.Button(new Rect(10, 35, 150, 25), "Conectar para esse IP"))
                     _clientSide.Connect(IP, 2121);
             }
+            else
+            {
+                if (GUI.Button(new Rect(10, 10, 150, 25), "Desconectar"))
+                    _clientSide.Disconnect();
+            }
         }
         private void FixedUpdate()
         {
