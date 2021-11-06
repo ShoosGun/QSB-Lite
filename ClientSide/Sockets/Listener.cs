@@ -84,8 +84,16 @@ namespace ClientSide.Sockets
                 byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
                 s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref ServerEndPoint, ReceiveCallback, nextDatagramBuffer);
             }
-            catch
+            catch (Exception ex)
             {
+                if (ex.GetType() == typeof(SocketException))
+                {
+                    Disconnection(null);
+                    return;
+                }
+
+                byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
+                s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref ServerEndPoint, ReceiveCallback, nextDatagramBuffer);
             }
         }
 
