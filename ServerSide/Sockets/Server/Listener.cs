@@ -57,7 +57,7 @@ namespace ServerSide.Sockets.Servers
 
                 string localIPv4 = GetLocalIPAddress();
                 if (localIPv4 != null)
-                    Console.WriteLine("Server IP = {0} <<", localIPv4);
+                    Console.WriteLine("Server IP = {0}:{1} <<", localIPv4, Port);
                 else
                     Console.WriteLine("Não conseguimos o IPv4");
             }
@@ -77,8 +77,7 @@ namespace ServerSide.Sockets.Servers
             {
                 byte[] datagramBuffer = (byte[])ar.AsyncState;
                 int datagramSize = s.EndReceiveFrom(ar, ref sender);
-                //Erro gerado quando um cliente se desconecta, tentar refazer isso (?) e chamar BeginReceiveFrom novamente
- 
+                //Erro gerado quando um cliente se desconecta, tentar refazer isso (?) e chamar BeginReceiveFrom novamente                
                 if (datagramSize > 0)
                 {
                     switch ((PacketTypes)datagramBuffer[0])
@@ -90,7 +89,7 @@ namespace ServerSide.Sockets.Servers
                             Receive(datagramBuffer, (IPEndPoint)sender);
                             break;
                         case PacketTypes.DISCONNECTION:
-                            Disconnections(datagramBuffer, (IPEndPoint)sender);
+                            Disconnections((IPEndPoint)sender, true);
                             break;
                     }
                 }
@@ -102,7 +101,16 @@ namespace ServerSide.Sockets.Servers
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Erro no callback ao receber dados do Client {0}: {1}", ((IPEndPoint)sender).Address, ex.Message);
+                if (ex.GetType() != typeof(SocketException))
+                    Console.WriteLine("Erro no callback ao receber dados do Client {0}: {1}\n\t{2}", ((IPEndPoint)sender).Address, ex.Source, ex.Message);
+                else
+                {
+                    Console.WriteLine("Erro com socket tipo {0}: {1}\n\t{2}", ((SocketException)ex).ErrorCode, ex.Source, ex.Message);
+                    Disconnections((IPEndPoint)sender, false);
+                }
+
+                byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
+                s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref AllowedClients, ReceiveCallback, nextDatagramBuffer);
             }
         }
 
@@ -155,7 +163,7 @@ namespace ServerSide.Sockets.Servers
         }
 
         //Cliente -> Servidor -> Cliente
-        private void Disconnections(byte[] dgram, IPEndPoint sender)
+        private void Disconnections(IPEndPoint sender, bool sendDisconectionMessage = true)
         {
             //Se o cliente está mesmo conectado então enviar que desconectou mesmo e uma verificação de tal fato
             if (Clients.ContainsValue(sender))
@@ -164,8 +172,11 @@ namespace ServerSide.Sockets.Servers
                 Clients.Remove(keyValuePair.Key);
                 OnClientDisconnection?.Invoke(keyValuePair.Key);
 
-                byte[] awnserBuffer = BitConverter.GetBytes((byte)PacketTypes.DISCONNECTION);
-                s.SendTo(awnserBuffer, sender);
+                if (sendDisconectionMessage)
+                {
+                    byte[] awnserBuffer = BitConverter.GetBytes((byte)PacketTypes.DISCONNECTION);
+                    s.SendTo(awnserBuffer, sender);
+                }
             }            
         }
 
