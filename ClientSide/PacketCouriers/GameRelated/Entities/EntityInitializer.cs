@@ -28,7 +28,11 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
         public static void ResetInstantiadableGameObjectsPrefabHub()
         {
             instantiadableGOPrefabMethods.Clear();
-            ownersDictionary.Clear();
+            DisconnectionReset();
+        }
+        public static void DisconnectionReset()
+        {
+            ownersDictionary.ClearAndDestroyAllEntites();
             idsGenerator.Reset();
         }
     }
@@ -57,7 +61,7 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
 
         private void EntityInitializer_Disconnection()
         {
-            InstantiadableGameObjectsPrefabHub.ownersDictionary.ClearAndDestroyAllEntites();
+            InstantiadableGameObjectsPrefabHub.DisconnectionReset();
         }
         private void ServerInteraction_OnServerRemoveOwnerID(int removedOwnerID)
         {
