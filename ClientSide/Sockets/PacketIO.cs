@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 
-namespace ClientSide.Sockets
+namespace SNet_Client.Sockets
 {
     public class PacketWriter : BinaryWriter
     {

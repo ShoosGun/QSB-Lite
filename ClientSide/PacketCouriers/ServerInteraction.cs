@@ -1,9 +1,9 @@
 ﻿using System;
 
-using ClientSide.Sockets;
+using SNet_Client.Sockets;
 using UnityEngine;
 
-namespace ClientSide.PacketCouriers
+namespace SNet_Client.PacketCouriers
 {
     public class ServerInteraction : MonoBehaviour
     {

@@ -7,8 +7,8 @@
     <ProjectGuid>{5370E0E7-F170-4721-8A7F-C4594E068F6A}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ClientSide</RootNamespace>
-    <AssemblyName>ClientSide</AssemblyName>
+    <RootNamespace>SNet_Client</RootNamespace>
+    <AssemblyName>SNet_Client</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -48,17 +48,17 @@
   <ItemGroup>
     <Compile Include="ClientMod.cs" />
     <Compile Include="EntityScripts\EntityScriptBehaviour.cs" />
-    <Compile Include="PacketCouriers\GameRelated\Entities\ClientOwnerIdsGenerator.cs" />
-    <Compile Include="PacketCouriers\GameRelated\Entities\NetworkedEntityDictionary.cs" />
+    <Compile Include="PacketCouriers\Entities\ClientOwnerIdsGenerator.cs" />
+    <Compile Include="PacketCouriers\Entities\NetworkedEntityDictionary.cs" />
     <Compile Include="EntityScripts\TransfromSync\RigidbodyEntitySync.cs" />
     <Compile Include="EntityScripts\TransfromSync\TransformEntitySync.cs" />
-    <Compile Include="PacketCouriers\GameRelated\Entities\NetworkedEntity.cs" />
-    <Compile Include="PacketCouriers\GameRelated\Entities\EntityInitializer.cs" />
+    <Compile Include="PacketCouriers\Entities\NetworkedEntity.cs" />
+    <Compile Include="PacketCouriers\Entities\EntityInitializer.cs" />
     <Compile Include="PacketCouriers\ServerInteraction.cs" />
     <Compile Include="SettingsMenu\ClientModSettingsMenu.cs" />
-    <Compile Include="EntityScripts\Shades\Shade.cs" />
-    <Compile Include="EntityScripts\Shades\ShadeDetachHandler.cs" />
-    <Compile Include="EntityScripts\Shades\ShadeMovementModel.cs" />
+    <Compile Include="GameRelated\Shades\Shade.cs" />
+    <Compile Include="GameRelated\Shades\ShadeDetachHandler.cs" />
+    <Compile Include="GameRelated\Shades\ShadeMovementModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SettingsMenu\ClientModMenu.cs" />
     <Compile Include="Sockets\Listener.cs" />

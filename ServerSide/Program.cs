@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading;
-using ServerSide.PacketCouriers;
-using ServerSide.Sockets.Servers;
+using SNet_Server.PacketCouriers;
+using SNet_Server.Sockets;
 
-namespace ServerSide
+namespace SNet_Server
 {
     class Program
     {

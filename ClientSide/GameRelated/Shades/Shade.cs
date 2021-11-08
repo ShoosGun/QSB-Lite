@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
 
-namespace ClientSide.EntityScripts.Shades
+namespace SNet_Client.EntityScripts.Shades
 {
-    public class Shade 
+    public class Shade
     {
         public static GameObject GenerateShadeThatFollowsThePlayer(bool colliderDissabled = true)
         {

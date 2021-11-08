@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 
-using ClientSide.Sockets;
-using ClientSide.Utils;
+using SNet_Client.Sockets;
+using SNet_Client.Utils;
 using UnityEngine;
 
 
-namespace ClientSide.PacketCouriers.GameRelated.Entities
+namespace SNet_Client.PacketCouriers.Entities
 {
     static class InstantiadableGameObjectsPrefabHub
     {

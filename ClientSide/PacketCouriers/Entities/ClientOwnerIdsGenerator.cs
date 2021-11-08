@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ClientSide.PacketCouriers.GameRelated.Entities
+namespace SNet_Client.PacketCouriers.Entities
 {
     public class EntityIdsGenerator
     {

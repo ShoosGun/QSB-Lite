@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Threading;
 
 
-namespace ClientSide.Sockets
+namespace SNet_Client.Sockets
 {
     public class Listener
     {

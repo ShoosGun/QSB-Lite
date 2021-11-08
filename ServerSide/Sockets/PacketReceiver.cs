@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 
-using ServerSide.Utils;
-namespace ServerSide.Sockets
+using SNet_Server.Utils;
+namespace SNet_Server.Sockets
 {
     public class PacketReceiver
     {

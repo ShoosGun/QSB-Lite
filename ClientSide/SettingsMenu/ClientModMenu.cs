@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
-namespace ClientSide.SettingsMenu
+namespace SNet_Client.SettingsMenu
 {
     public class ClientModMenu : MonoBehaviour
     {

@@ -1,8 +1,8 @@
-﻿using ClientSide.PacketCouriers.GameRelated.Entities;
-using ClientSide.Sockets;
+﻿using SNet_Client.PacketCouriers.Entities;
+using SNet_Client.Sockets;
 using UnityEngine;
 
-namespace ClientSide.EntityScripts
+namespace SNet_Client.EntityScripts
 {
     public class EntityScriptBehaviour : MonoBehaviour
     {

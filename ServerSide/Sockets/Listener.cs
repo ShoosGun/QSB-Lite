@@ -6,7 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 
-namespace ServerSide.Sockets
+namespace SNet_Server.Sockets
 {
     //1 - Adicionar o mandar e enviar de mensagens para saber se o cliente está mesmo conectado (FEITO)
     //2 - Adicionar o mandar e receber de mensagens para saber se o cliente está mesmo desconectado (FEITO)

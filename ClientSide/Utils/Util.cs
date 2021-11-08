@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
-using ClientSide.PacketCouriers.GameRelated.Entities;
+using SNet_Client.PacketCouriers.Entities;
 
-namespace ClientSide.Utils
+namespace SNet_Client.Utils
 {
     public static class Util
     {

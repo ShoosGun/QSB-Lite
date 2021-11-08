@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
-using ClientSide.Sockets;
+using SNet_Client.Sockets;
 
-namespace ClientSide.PacketCouriers
+namespace SNet_Client.PacketCouriers
 {
     public interface IPacketCourier
     {

@@ -1,8 +1,8 @@
 ﻿using System;
-using ServerSide.Sockets.Servers;
-using ServerSide.Utils;
+using SNet_Server.Sockets;
+using SNet_Server.Utils;
 
-namespace ServerSide.PacketCouriers
+namespace SNet_Server.PacketCouriers
 {
     public class ServerInteraction
     {
@@ -24,7 +24,7 @@ namespace ServerSide.PacketCouriers
             server.OnNewClient += Server_NewConnectionID;
             server.OnClientDisconnection += Server_DisconnectionID;
             
-            HeaderValue = server.packetReceiver.AddPacketReader(SI_LOCALIZATION_STRING, ReadPacket);
+            HeaderValue = server.PacketReceiver.AddPacketReader(SI_LOCALIZATION_STRING, ReadPacket);
 
             ownerIdsGenerator = new ClientOwnerIdsGenerator(MAX_CLIENT_AMOUT);
 

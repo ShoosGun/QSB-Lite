@@ -1,19 +1,17 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using BepInEx;
 
-using ClientSide.Sockets;
-using ClientSide.SettingsMenu;
-using ClientSide.Utils;
+using SNet_Client.Sockets;
+using SNet_Client.Utils;
 
-using ClientSide.PacketCouriers.GameRelated.Entities;
-using ClientSide.PacketCouriers;
-using System.Collections;
-using System;
-using ClientSide.EntityScripts.TransfromSync;
+using SNet_Client.PacketCouriers.Entities;
+using SNet_Client.PacketCouriers;
+using SNet_Client.EntityScripts.TransfromSync;
 
-namespace ClientSide
+namespace SNet_Client
 {
-    [BepInPlugin("locochoco.QSB-Lite","Qsb Lite","0.0.1")]
+    [BepInPlugin("locochoco.SNet","SNet","0.0.1")]
     public class ClientMod : BaseUnityPlugin
     {
         public Client _clientSide;
@@ -26,14 +24,8 @@ namespace ClientSide
             _clientSide = new Client();
 
             gameObject.AddComponent<ServerInteraction>();
-
-            //gameObject.AddComponent<MajorSectorLocator>();
-
             gameObject.AddComponent<EntityInitializer>();
 
-            //TODO Refazer o menu para se conectar a um servidor
-            //gameObject.AddComponent<ClientModSettingsMenu>();        
-            
             //Entity Test
             EntityInitializer.client_EntityInitializer.AddGameObjectPrefab("CuB0", CreateNetworkedCube);
             ServerInteraction.OnReceiveOwnerID += ServerInteraction_OnReceiveOwnerID;

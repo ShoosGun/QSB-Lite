@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Threading;
 
-using ServerSide.Utils;
+using SNet_Server.Utils;
 
-namespace ServerSide.Sockets
+namespace SNet_Server.Sockets
 {
     public class Server
     {

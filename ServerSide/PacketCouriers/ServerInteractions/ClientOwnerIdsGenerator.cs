@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ServerSide.PacketCouriers
+namespace SNet_Server.PacketCouriers
 {
     public class ClientOwnerIdsGenerator
     {

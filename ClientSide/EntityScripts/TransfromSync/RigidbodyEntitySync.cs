@@ -1,7 +1,7 @@
-﻿using ClientSide.Sockets;
+﻿using SNet_Client.Sockets;
 using UnityEngine;
 
-namespace ClientSide.EntityScripts.TransfromSync
+namespace SNet_Client.EntityScripts.TransfromSync
 {
     public enum SyncRigidbody : byte
     {

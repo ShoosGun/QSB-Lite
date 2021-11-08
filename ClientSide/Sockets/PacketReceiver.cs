@@ -1,9 +1,9 @@
-﻿using ClientSide.Utils;
+﻿using SNet_Client.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace ClientSide.Sockets
+namespace SNet_Client.Sockets
 {    
     public class PacketReceiver
     {

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using ServerSide.Sockets.Servers;
-using ServerSide.Utils;
+using SNet_Server.Sockets;
+using SNet_Server.Utils;
 
 
-namespace ServerSide.PacketCouriers
+namespace SNet_Server.PacketCouriers
 {
     public class EntityRepasser
     {
@@ -20,7 +20,7 @@ namespace ServerSide.PacketCouriers
         {
             this.server = server;
 
-            HeaderValue = server.packetReceiver.AddPacketReader(EI_LOCALIZATION_STRING, ReadPacket);
+            HeaderValue = server.PacketReceiver.AddPacketReader(EI_LOCALIZATION_STRING, ReadPacket);
 
             this.serverInteraction = serverInteraction;
             this.serverInteraction.OnAfterSendOwnerID += ServerInteraction_OnAfterSendOwnerID;

@@ -1,8 +1,8 @@
-﻿using ClientSide.Sockets;
-using ClientSide.Utils;
+﻿using SNet_Client.Sockets;
+using SNet_Client.Utils;
 using UnityEngine;
 
-namespace ClientSide.EntityScripts.TransfromSync
+namespace SNet_Client.EntityScripts.TransfromSync
 {
     public enum SyncTransform : byte
     {

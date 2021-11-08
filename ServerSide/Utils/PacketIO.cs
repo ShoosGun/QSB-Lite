@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace ServerSide.Utils
+namespace SNet_Server.Utils
 {
     public class PacketWriter : BinaryWriter
     {

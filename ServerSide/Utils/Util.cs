@@ -1,5 +1,5 @@
 ﻿
-namespace ServerSide.Utils
+namespace SNet_Server.Utils
 {
     public static class Util
     {

@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Collections.Generic;
 
-namespace ClientSide.PacketCouriers.GameRelated.Entities
+namespace SNet_Client.PacketCouriers.Entities
 {
     public class NetworkedEntityDictionary  : KeyedCollection<int, NetworkedEntity>
     {

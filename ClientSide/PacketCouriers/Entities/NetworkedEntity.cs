@@ -1,10 +1,10 @@
-﻿using ClientSide.EntityScripts;
-using ClientSide.Sockets;
+﻿using SNet_Client.EntityScripts;
+using SNet_Client.Sockets;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ClientSide.PacketCouriers.GameRelated.Entities
+namespace SNet_Client.PacketCouriers.Entities
 {
     public class NetworkedEntity : MonoBehaviour
     {

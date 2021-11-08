@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 
-namespace ServerSide.PacketCouriers
+namespace SNet_Server.PacketCouriers
 { 
     public class ConnectedClientDataDictionary : KeyedCollection<string, ConnectedClientData>
     {
