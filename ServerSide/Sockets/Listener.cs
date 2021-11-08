@@ -8,9 +8,6 @@ using System.Threading;
 
 namespace SNet_Server.Sockets
 {
-    //1 - Adicionar o mandar e enviar de mensagens para saber se o cliente está mesmo conectado (FEITO)
-    //2 - Adicionar o mandar e receber de mensagens para saber se o cliente está mesmo desconectado (FEITO)
-    //TODO 3 - Adicionar uma forma de descobrir se o cliente desconectou sem avisar tal
     public class Listener
     {
         private Dictionary<string, IPEndPoint> Clients;
@@ -129,8 +126,7 @@ namespace SNet_Server.Sockets
                         OnClientConnection?.Invoke(id);
                     }
                     PendingConnectionVerifications.Remove(sender);
-                    //Enviar que está sim conectado o sender
-                    //TODO Enviar que está sim conectado o sender
+
                     return;
                 }
                 //Quer dizer que ele enviou sem necessidade

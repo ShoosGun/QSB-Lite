@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace SNet_Client.Utils
 {
-    //TODO Refazer isso aki com uma lista no lugar de achar eles durante a "gameplay"
     public static class ReferenceFrameLocator
     {
         private static Dictionary<ReferenceFrames, Transform> referenceFrames = new Dictionary<ReferenceFrames, Transform>();

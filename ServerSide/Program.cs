@@ -30,7 +30,6 @@ namespace SNet_Server
             }
 
             Console.WriteLine("Aperte alguma tecla para fechar");
-            //TODO Adicionar maneira de para essa thread por fora
             Server server = new Server(PORT);
 
             ServerInteraction serverInteraction = new ServerInteraction(server);
