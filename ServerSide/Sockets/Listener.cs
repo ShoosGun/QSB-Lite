@@ -6,7 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 
-namespace ServerSide.Sockets.Servers
+namespace ServerSide.Sockets
 {
     //1 - Adicionar o mandar e enviar de mensagens para saber se o cliente está mesmo conectado (FEITO)
     //2 - Adicionar o mandar e receber de mensagens para saber se o cliente está mesmo desconectado (FEITO)
@@ -151,15 +151,17 @@ namespace ServerSide.Sockets.Servers
             {
                 IPEndPoint pendingVerificationSender = sender;
                 Thread.Sleep(MAX_WAITING_TIME_FOR_VERIFICATION);
-
-                //Ignorar o pedido caso não tenha sido tirado da lista até então
-                lock (PendingConnectionVerifications_LOCK)
-                {
-                    if (PendingConnectionVerifications.Contains(pendingVerificationSender))
-                        PendingConnectionVerifications.Remove(pendingVerificationSender);
-                }
-
+                VerifyIfClientIsConnected(pendingVerificationSender);
             }).Start();
+        }
+        private void VerifyIfClientIsConnected(IPEndPoint senderToVerify)
+        {
+            //Ignorar o pedido caso não tenha sido tirado da lista até então
+            lock (PendingConnectionVerifications_LOCK)
+            {
+                if (PendingConnectionVerifications.Contains(senderToVerify))
+                    PendingConnectionVerifications.Remove(senderToVerify);
+            }
         }
 
         //Cliente -> Servidor -> Cliente

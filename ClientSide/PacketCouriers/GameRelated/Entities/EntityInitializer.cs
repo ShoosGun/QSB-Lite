@@ -195,7 +195,7 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
             {
                 int entityId = reader.ReadInt32();
                 byte[] data = reader.ReadByteArray();
-                //if(ownerID != ServerInteraction.GetOwnerID())
+
                 if (InstantiadableGameObjectsPrefabHub.ownersDictionary.TryGetNetworkedEntity(ownerID, entityId, out NetworkedEntity entity))
                     entity.OnDeserializeEntity(data, receivedPacketData);
             }
@@ -206,16 +206,16 @@ namespace ClientSide.PacketCouriers.GameRelated.Entities
             switch ((EntityInitializerHeaders)reader.ReadByte())
             {
                 case EntityInitializerHeaders.Instantiate:
-                    Debug.Log("Nova Entidade");
+                    //Debug.Log("Nova Entidade");
                     ReadEntityInstantiateData(ref reader);
                     break;
                 case EntityInitializerHeaders.Remove:
                     ReceiveRemoveEntity(ref reader);
-                    Debug.Log("Remover Entidade");
+                    //Debug.Log("Remover Entidade");
                     break;
                 case EntityInitializerHeaders.EntitySerialization:
                     ReadEntityScriptsOnDeserialization(ref reader, receivedPacketData);
-                    Debug.Log("Update de Entidades");
+                    //Debug.Log("Update de Entidades");
                     break;
             }
         }

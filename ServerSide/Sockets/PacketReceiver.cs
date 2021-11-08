@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 using ServerSide.Utils;
-namespace ServerSide.Sockets.Servers
+namespace ServerSide.Sockets
 {
     public class PacketReceiver
     {

@@ -104,7 +104,7 @@ namespace ServerSide.PacketCouriers
                 buffer.Write((byte)EntityInitializerHeaders.EntitySerialization);
                 buffer.Write(ownerID);
                 buffer.Write(reader.ReadByteArray());
-                server.SendAll(buffer.GetBytes(), HeaderValue);
+                server.SendAll(buffer.GetBytes(), HeaderValue, receivedPacketData.ClientID);
             }
         }
         private void TransmitRemoveEntity(ref PacketReader reader, ReceivedPacketData receivedPacketData)

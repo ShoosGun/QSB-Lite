@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
 using System.Threading;
 
 using ServerSide.Utils;
 
-namespace ServerSide.Sockets.Servers
+namespace ServerSide.Sockets
 {
     public class Server
     {
@@ -14,11 +13,11 @@ namespace ServerSide.Sockets.Servers
         private Queue<ClientEssentials> ReceivedDataCache;
         private readonly object RDC_lock = new object();
         
-        public PacketReceiver packetReceiver { get; private set; }
+        public PacketReceiver PacketReceiver { get; private set; }
         
         public Server(int port)
         {
-            packetReceiver = new PacketReceiver();
+            PacketReceiver = new PacketReceiver();
             ReceivedDataCache = new Queue<ClientEssentials>();
 
             l = new Listener(port);
@@ -69,7 +68,7 @@ namespace ServerSide.Sockets.Servers
                 DateTime sendTime = packet.ReadDateTime();
                 ReceivedPacketData receivedPacketData = new ReceivedPacketData(receivedDGram.ClientID, sendTime, (DateTime.UtcNow - sendTime).Milliseconds);
 
-                packetReceiver.ReadReceivedPacket(ref packet, Header, receivedPacketData);
+                PacketReceiver.ReadReceivedPacket(ref packet, Header, receivedPacketData);
             }
             catch (Exception ex)
             {
