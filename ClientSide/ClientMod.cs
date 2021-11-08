@@ -26,6 +26,9 @@ namespace SNet_Client
             gameObject.AddComponent<ServerInteraction>();
             gameObject.AddComponent<EntityInitializer>();
 
+            //TODO Adicionar o Shade quando o cliente está na Scene que tem o player e criar a função de prefab para ele
+            //TODO Remover as coisas de teste dessa classe quando o TODO anterior for completado
+
             //Entity Test
             EntityInitializer.client_EntityInitializer.AddGameObjectPrefab("CuB0", CreateNetworkedCube);
             ServerInteraction.OnReceiveOwnerID += ServerInteraction_OnReceiveOwnerID;
