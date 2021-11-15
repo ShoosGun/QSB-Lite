@@ -6,6 +6,8 @@ using SNet_Client.Sockets;
 using SNet_Client.PacketCouriers.Entities;
 using SNet_Client.PacketCouriers;
 
+using SNet_Client.EntityCreators;
+
 namespace SNet_Client
 {
     [BepInPlugin("locochoco.SNet","SNet","0.0.1")]
@@ -20,8 +22,13 @@ namespace SNet_Client
 
             _clientSide = new Client();
 
+            //Network Specific Scripts
             gameObject.AddComponent<ServerInteraction>();
-            gameObject.AddComponent<EntityInitializer>();           
+            gameObject.AddComponent<EntityInitializer>();
+
+            //Game Specific Scripts
+            gameObject.AddComponent<PlayerEntities>();
+
         }
 
         string IP = "127.0.0.1";

@@ -112,6 +112,10 @@ namespace SNet_Client.PacketCouriers.Entities
             networkedEntity.id = ID;
             networkedEntity.ownerId = ownerID;
             Debug.Log(string.Format("{0} {1} {2}", ownerID, ID, prefabName));
+
+            if (ownerID != ServerInteraction.GetOwnerID())
+                DontDestroyOnLoad(networkedEntity.gameObject);
+
             InstantiadableGameObjectsPrefabHub.ownersDictionary.AddEntity(networkedEntity);
         }
 
