@@ -137,7 +137,9 @@ namespace SNet_Client.PacketCouriers.Entities
 
             NetworkedEntity networkedEntity = InstantiadableGameObjectsPrefabHub.ownersDictionary.GetNetworkedEntity(ownerID, id);
             InstantiadableGameObjectsPrefabHub.ownersDictionary.RemoveEntity(networkedEntity);
-            Destroy(networkedEntity.gameObject);
+
+            if(networkedEntity != null)
+                Destroy(networkedEntity.gameObject);
 
             if (networkedEntity.IsOurs())
                 InstantiadableGameObjectsPrefabHub.idsGenerator.ReturnID(networkedEntity.id);

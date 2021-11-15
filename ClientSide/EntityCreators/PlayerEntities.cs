@@ -4,21 +4,25 @@ using SNet_Client.PacketCouriers.Entities;
 using SNet_Client.PacketCouriers;
 using SNet_Client.EntityScripts.TransfromSync;
 using SNet_Client.Utils;
+using SNet_Client.Sockets;
 
 namespace SNet_Client.EntityCreators
 {
     public class PlayerEntities : MonoBehaviour
     {
         bool hasSpawnedPlayer = false;
+        bool weHavePlayerID = false;
         public void Start()
         {
             EntityInitializer.client_EntityInitializer.AddGameObjectPrefab("PlayerEntity", CreatePlayerEntity);
             ServerInteraction.OnReceiveOwnerID += ServerInteraction_OnReceiveOwnerID;
+            Client.GetClient().Disconnection += PlayerEntities_Disconnection;
 
             GlobalMessenger<DeathType>.AddListener("PlayerDeath", OnPlayerDeath);
             GlobalMessenger<int>.AddListener("StartOfTimeLoop", OnStartOfTimeLoop);
             GlobalMessenger.AddListener("ResumeSimulation", OnResumeSimulation);
         }
+
         public void OnDestroy()
         {
             GlobalMessenger<DeathType>.RemoveListener("PlayerDeath", OnPlayerDeath);
@@ -27,12 +31,12 @@ namespace SNet_Client.EntityCreators
         }
         private void OnStartOfTimeLoop(int loop)
         {
-            if(!hasSpawnedPlayer)
+            if(!hasSpawnedPlayer && weHavePlayerID)
                 SpawnPlayer();
         }
         private void OnResumeSimulation()
         {
-            if (!hasSpawnedPlayer)
+            if (!hasSpawnedPlayer && weHavePlayerID)
                 SpawnPlayer();
         }
         private void OnPlayerDeath(DeathType deathType)
@@ -41,8 +45,11 @@ namespace SNet_Client.EntityCreators
         }
         private void ServerInteraction_OnReceiveOwnerID()
         {
-            if (!hasSpawnedPlayer)
-                SpawnPlayer();
+            weHavePlayerID = true;
+        }
+        private void PlayerEntities_Disconnection()
+        {
+            weHavePlayerID = false;
         }
 
         private void SpawnPlayer()
@@ -72,13 +79,19 @@ namespace SNet_Client.EntityCreators
 
             go.AddComponent<OWRigidbody>();
 
-            go.transform.position = position;
-            go.transform.rotation = rotation;
+            
 
             if (ownerID == ServerInteraction.GetOwnerID())
             {
                 go.transform.parent = Locator.GetPlayerTransform();
-                rigidbody.isKinematic = false;
+                go.transform.localPosition = Vector3.zero;
+                go.transform.localRotation = Quaternion.identity;
+                rigidbody.isKinematic = true;
+            }
+            else
+            {
+                go.transform.position = position;
+                go.transform.rotation = rotation;
             }
             
 

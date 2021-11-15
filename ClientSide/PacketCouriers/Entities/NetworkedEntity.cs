@@ -82,5 +82,10 @@ namespace SNet_Client.PacketCouriers.Entities
                 }
             }
         }
+
+        protected void OnDestroy()
+        {
+            EntityInitializer.client_EntityInitializer.DestroyEntity(this);
+        }
     }
 }
