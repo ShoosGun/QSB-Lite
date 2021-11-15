@@ -28,17 +28,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
         {
             base.Start();
             referenceFrameTransform = ReferenceFrameLocator.GetReferenceFrame(referenceFrame);
-            StartCoroutine("DebugPos");
             //Debug.Log(string.Format("Reference Type {0} e Sync Type {1}", syncTransformType, referenceFrame));
-        }
-
-        private IEnumerator DebugPos()
-        {
-            while (true)
-            {
-                Debug.Log(string.Format("Pos: {0} Rot: {1}", transform.position, transform.rotation));
-                yield return new WaitForSeconds(0.5f);
-            }
         }
 
         public override void OnDeserialize(ref PacketReader reader, ReceivedPacketData receivedPacketData)
