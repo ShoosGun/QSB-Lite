@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.1231
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientSide", "ClientSide\ClientSide.csproj", "{5370E0E7-F170-4721-8A7F-C4594E068F6A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SNet_Client", "ClientSide\SNet_Client.csproj", "{5370E0E7-F170-4721-8A7F-C4594E068F6A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerSide", "ServerSide\ServerSide.csproj", "{E16EE9BF-6719-44D1-B2AA-069EFB1CB1F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SNet_Server", "ServerSide\SNet_Server.csproj", "{E16EE9BF-6719-44D1-B2AA-069EFB1CB1F9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

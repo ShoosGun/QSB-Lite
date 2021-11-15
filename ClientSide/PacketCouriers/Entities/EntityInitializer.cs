@@ -10,7 +10,7 @@ namespace SNet_Client.PacketCouriers.Entities
 {
     static class InstantiadableGameObjectsPrefabHub
     {
-        public delegate NetworkedEntity EntityPrefab(Vector3 position, Quaternion rotation, params object[] InitializationData);
+        public delegate NetworkedEntity EntityPrefab(Vector3 position, Quaternion rotation, int ownerID, params object[] InitializationData);
 
         public static readonly Dictionary<string, EntityPrefab> instantiadableGOPrefabMethods = new Dictionary<string, EntityPrefab>();
         public static readonly NetworkedEntityOwnerDictionary ownersDictionary = new NetworkedEntityOwnerDictionary();
@@ -108,7 +108,7 @@ namespace SNet_Client.PacketCouriers.Entities
             if (!InstantiadableGameObjectsPrefabHub.instantiadableGOPrefabMethods.TryGetValue(prefabName, out InstantiadableGameObjectsPrefabHub.EntityPrefab prefab))
                 throw new OperationCanceledException(string.Format("There is no GameObject in {0}", prefabName));
 
-            NetworkedEntity networkedEntity = prefab(position, rotation, data);
+            NetworkedEntity networkedEntity = prefab(position, rotation, ownerID, data);
             networkedEntity.id = ID;
             networkedEntity.ownerId = ownerID;
             Debug.Log(string.Format("{0} {1} {2}", ownerID, ID, prefabName));

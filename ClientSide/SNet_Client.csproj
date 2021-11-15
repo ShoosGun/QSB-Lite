@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClientMod.cs" />
+    <Compile Include="EntityCreators\PlayerEntities.cs" />
     <Compile Include="EntityScripts\EntityScriptBehaviour.cs" />
     <Compile Include="PacketCouriers\Entities\ClientOwnerIdsGenerator.cs" />
     <Compile Include="PacketCouriers\Entities\NetworkedEntityDictionary.cs" />

@@ -1,13 +1,10 @@
-﻿using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 using BepInEx;
 
 using SNet_Client.Sockets;
-using SNet_Client.Utils;
 
 using SNet_Client.PacketCouriers.Entities;
 using SNet_Client.PacketCouriers;
-using SNet_Client.EntityScripts.TransfromSync;
 
 namespace SNet_Client
 {
@@ -24,14 +21,7 @@ namespace SNet_Client
             _clientSide = new Client();
 
             gameObject.AddComponent<ServerInteraction>();
-            gameObject.AddComponent<EntityInitializer>();
-
-            //TODO Adicionar o Shade quando o cliente está na Scene que tem o player e criar a função de prefab para ele
-            //TODO Remover as coisas de teste dessa classe quando o TODO anterior for completado
-
-            //Entity Test
-            EntityInitializer.client_EntityInitializer.AddGameObjectPrefab("CuB0", CreateNetworkedCube);
-            ServerInteraction.OnReceiveOwnerID += ServerInteraction_OnReceiveOwnerID;
+            gameObject.AddComponent<EntityInitializer>();           
         }
 
         string IP = "127.0.0.1";
@@ -56,44 +46,6 @@ namespace SNet_Client
         private void OnDestroy()
         {
             _clientSide.Disconnect();
-        }
-
-        private void ServerInteraction_OnReceiveOwnerID()
-        {
-            StartCoroutine("CreateAndDestroyCubePeriodically");
-        }
-        NetworkedEntity entity;
-        IEnumerator CreateAndDestroyCubePeriodically()
-        {
-            while (true)
-            {
-                yield return new WaitForSeconds(7.5f);
-
-                if (entity == null)
-                {
-                    EntityInitializer.client_EntityInitializer.InstantiateEntity("CuB0", GameObject.Find("Camera").transform.position + GameObject.Find("Camera").transform.forward * 2f, Quaternion.identity, EntityInitializer.InstantiateType.Buffered, (byte)SyncTransform.All, (byte)ReferenceFrames.GlobalRoot);
-                }
-                else
-                {
-                    EntityInitializer.client_EntityInitializer.DestroyEntity(entity);
-                }
-            }
-        }
-        public NetworkedEntity CreateNetworkedCube(Vector3 position, Quaternion rotation, object[] InitializationData)
-        {
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.transform.position = position;
-            go.transform.rotation = rotation;
-            go.transform.localScale = Vector3.one;
-
-            go.transform.parent = GameObject.Find("Camera").transform;
-
-            NetworkedEntity networkedEntity = go.AddComponent<NetworkedEntity>();
-            TransformEntitySync transformEntitySync = networkedEntity.AddEntityScript<TransformEntitySync>();
-            transformEntitySync.syncTransformType = (SyncTransform)InitializationData[0];
-            transformEntitySync.referenceFrame = (ReferenceFrames)InitializationData[1];
-            entity = networkedEntity;
-            return networkedEntity;
         }
     }
 }
