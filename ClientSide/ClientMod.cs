@@ -28,6 +28,7 @@ namespace SNet_Client
 
             //Game Specific Scripts
             gameObject.AddComponent<PlayerEntities>();
+            gameObject.AddComponent<ProbeEntities>();
 
         }
 

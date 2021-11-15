@@ -46,6 +46,8 @@ namespace SNet_Client.EntityCreators
         private void ServerInteraction_OnReceiveOwnerID()
         {
             weHavePlayerID = true;
+            if (!hasSpawnedPlayer)
+                SpawnPlayer();
         }
         private void PlayerEntities_Disconnection()
         {
@@ -79,8 +81,6 @@ namespace SNet_Client.EntityCreators
 
             go.AddComponent<OWRigidbody>();
 
-            
-
             if (ownerID == ServerInteraction.GetOwnerID())
             {
                 go.transform.parent = Locator.GetPlayerTransform();
@@ -93,7 +93,6 @@ namespace SNet_Client.EntityCreators
                 go.transform.position = position;
                 go.transform.rotation = rotation;
             }
-            
 
             NetworkedEntity networkedEntity = go.AddComponent<NetworkedEntity>();
 
