@@ -36,7 +36,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
             if (syncTransformType == SyncTransform.PositionOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
                 transform.position = WithReferenceFrame(reader.ReadVector3());
             if (syncTransformType == SyncTransform.RotationOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
-                transform.rotation = reader.ReadQuaternion();
+                transform.rotation = RotationToReferenceFrame(reader.ReadQuaternion());
             if (syncTransformType == SyncTransform.ScaleOnly || syncTransformType == SyncTransform.All)
                 transform.localScale = reader.ReadVector3();
         }
@@ -56,12 +56,27 @@ namespace SNet_Client.EntityScripts.TransfromSync
             return referenceFrameTransform.TransformPoint(position);
         }
 
+        private Quaternion RotationToReferenceFrame(Quaternion rotation)
+        {
+            if (referenceFrameTransform == null)
+                return rotation;
+
+            return Quaternion.Inverse(referenceFrameTransform.rotation)* rotation;
+        }
+        private Quaternion InverseRotationToReferenceFrame(Quaternion rotation)
+        {
+            if (referenceFrameTransform == null)
+                return rotation;
+
+            return referenceFrameTransform.rotation * rotation;
+        }
+
         public override void OnSerialize(ref PacketWriter writer)
         {
             if (syncTransformType == SyncTransform.PositionOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
                 writer.Write(InverseWithReferenceFrame(transform.position));
             if (syncTransformType == SyncTransform.RotationOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
-                writer.Write(transform.rotation);
+                writer.Write(InverseRotationToReferenceFrame(transform.rotation));
             if (syncTransformType == SyncTransform.ScaleOnly || syncTransformType == SyncTransform.All)
                 writer.Write(transform.localScale);
         }
