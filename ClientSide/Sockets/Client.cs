@@ -93,20 +93,25 @@ namespace SNet_Client.Sockets
                     wasConnected = true;
                     Connection?.Invoke();
                 }
-                
+
                 //Ler dados
-                bool packetBuffers_NotLocked = Monitor.TryEnter(receivedData_lock, 10);
+                bool WaspacketBuffers_LockAquired = false;
                 try
                 {
-                    int amountOfDGrams = receivedData.Count;
-                    for (int i = 0; i < amountOfDGrams; i++)
+                    WaspacketBuffers_LockAquired = Monitor.TryEnter(receivedData_lock, 10);
+                    if (WaspacketBuffers_LockAquired)
                     {
-                        ReceiveData(receivedData.Dequeue());
+                        int amountOfDGrams = receivedData.Count;
+                        for (int i = 0; i < amountOfDGrams; i++)
+                        {
+                            ReceiveData(receivedData.Dequeue());
+                        }
                     }
                 }
                 finally
                 {
-                    Monitor.Exit(receivedData_lock);
+                    if(WaspacketBuffers_LockAquired)
+                        Monitor.Exit(receivedData_lock);
                 }
             }
             else if (wasConnected)

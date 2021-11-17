@@ -91,18 +91,18 @@ namespace SNet_Server.Sockets
         }
         
         public void CheckReceivedData()
-        {            
-            bool RDC_NotLoked = Monitor.TryEnter(RDC_lock, 10);
+        {
+            bool WasRDC_LockAquired = false;
             try
             {
-                if (RDC_NotLoked)
-                {
+                Monitor.TryEnter(RDC_lock, 10, ref WasRDC_LockAquired);
+                if (WasRDC_LockAquired)
                     ReceivedData(ReceivedDataCache);
-                }
             }
             finally
             {
-                Monitor.Exit(RDC_lock);
+                if (WasRDC_LockAquired)
+                    Monitor.Exit(RDC_lock);
             }
         }
 
