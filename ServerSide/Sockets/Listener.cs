@@ -8,6 +8,10 @@ using System.Threading;
 
 namespace SNet_Server.Sockets
 {
+    //TODO Add reliable packets:
+    //1 - Mandar um pacote e marcar ele como "confiavel"
+    //2 - Pacotes "confiaveis" tem um id, e o receptor tem que enviar o id de volta
+    //3 - Quem enviou espera pelo id por um tempo t, se não receber envia novamente, se receber para de retransmitir
     public class Listener
     {
         private Dictionary<string, IPEndPoint> Clients;
