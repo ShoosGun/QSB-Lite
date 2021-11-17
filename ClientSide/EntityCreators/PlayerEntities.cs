@@ -79,7 +79,7 @@ namespace SNet_Client.EntityCreators
             rigidbody.drag = 0f;
             rigidbody.angularDrag = 0f;
 
-            go.AddComponent<OWRigidbody>();
+            OWRigidbody owrigid = go.AddComponent<OWRigidbody>();
 
             if (ownerID == ServerInteraction.GetOwnerID())
             {

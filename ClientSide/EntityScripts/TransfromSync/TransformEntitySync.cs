@@ -34,7 +34,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
         public override void OnDeserialize(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
             if (syncTransformType == SyncTransform.PositionOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
-                transform.position = InverseWithReferenceFrame(reader.ReadVector3());
+                transform.position = WithReferenceFrame(reader.ReadVector3());
             if (syncTransformType == SyncTransform.RotationOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
                 transform.rotation = reader.ReadQuaternion();
             if (syncTransformType == SyncTransform.ScaleOnly || syncTransformType == SyncTransform.All)
@@ -59,7 +59,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
         public override void OnSerialize(ref PacketWriter writer)
         {
             if (syncTransformType == SyncTransform.PositionOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
-                writer.Write(WithReferenceFrame(transform.position));
+                writer.Write(InverseWithReferenceFrame(transform.position));
             if (syncTransformType == SyncTransform.RotationOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
                 writer.Write(transform.rotation);
             if (syncTransformType == SyncTransform.ScaleOnly || syncTransformType == SyncTransform.All)
