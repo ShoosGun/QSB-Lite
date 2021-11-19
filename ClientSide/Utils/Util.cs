@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Threading;
+
+using UnityEngine;
 using SNet_Client.PacketCouriers.Entities;
 
 namespace SNet_Client.Utils
@@ -27,6 +30,25 @@ namespace SNet_Client.Utils
         public static NetworkedEntity GetAttachedNetworkedEntity(this Component component)
         {
             return component.GetComponent<NetworkedEntity>();
+        }
+
+        //Advindo de https://stackoverflow.com/questions/391621/compare-using-thread-sleep-and-timer-for-delayed-execution
+        class TimerState
+        {
+            public Timer Timer;
+        }
+
+        public static void DelayedAction(int millisecond, Action action)
+        {
+            TimerState state = new TimerState();
+
+            lock (state)
+            {
+                state.Timer = new Timer((callbackState) => {
+                    action();
+                    lock (callbackState) { ((TimerState)callbackState).Timer.Dispose(); }
+                }, state, millisecond, -1);
+            }
         }
     }
 }

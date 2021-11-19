@@ -1,4 +1,6 @@
-﻿
+﻿using System;
+using System.Threading;
+
 namespace SNet_Server.Utils
 {
     public static class Util
@@ -16,5 +18,25 @@ namespace SNet_Server.Utils
             }
             return hash_value;
         }
+
+
+        class TimerState
+        {
+            public Timer Timer;
+        }
+
+        public static void DelayedAction(int millisecond, Action action)
+        {
+            TimerState state = new TimerState();
+
+            lock (state)
+            {
+                state.Timer = new Timer((callbackState) => {
+                    action();
+                    lock (callbackState) { ((TimerState)callbackState).Timer.Dispose(); }
+                }, state, millisecond, -1);
+            }
+        }
     }
 }
+

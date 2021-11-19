@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
+
+using SNet_Server.Utils;
 
 namespace SNet_Server.Sockets
 {
@@ -147,12 +147,8 @@ namespace SNet_Server.Sockets
             //Usar aqui possiveis dados que vieram com o dgram
 
             //O limite de tempo para a confirmação da verificação
-            new Thread(() =>
-            {
-                IPEndPoint pendingVerificationSender = sender;
-                Thread.Sleep(MAX_WAITING_TIME_FOR_VERIFICATION);
-                VerifyIfClientIsConnected(pendingVerificationSender);
-            }).Start();
+            Util.DelayedAction(MAX_WAITING_TIME_FOR_VERIFICATION, ()=> { VerifyIfClientIsConnected(sender); });
+            
         }
         private void VerifyIfClientIsConnected(IPEndPoint senderToVerify)
         {

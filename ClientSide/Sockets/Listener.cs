@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
+
+using SNet_Client.Utils;
 
 
 namespace SNet_Client.Sockets
@@ -48,21 +49,20 @@ namespace SNet_Client.Sockets
             s.SendTo(connectionRequestBuffer, ServerEndPoint);
 
             UnityEngine.Debug.Log(string.Format("Tentando Conectar em: {0}:{1}", IP, port));
-            
-            new Thread(() =>
-            {
-                Thread.Sleep(MAX_WAITING_TIME_FOR_VERIFICATION);
-                lock (Connected_LOCK)
-                {
-                    Connecting = false;
-                    if (!Connected)
-                    {
-                        s.Close();
-                        OnFailConnection?.Invoke();
-                    }
-                }
-            }).Start();
 
+            Util.DelayedAction(MAX_WAITING_TIME_FOR_VERIFICATION, () =>
+             {
+                 lock (Connected_LOCK)
+                 {
+                     Connecting = false;
+                     if (!Connected)
+                     {
+                         s.Close();
+                         OnFailConnection?.Invoke();
+                     }
+                 }
+             });
+            
             byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
             s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref ServerEndPoint, ReceiveCallback, nextDatagramBuffer);
         }
