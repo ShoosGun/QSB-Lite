@@ -68,6 +68,7 @@
     <Compile Include="Sockets\PacketReceiver.cs" />
     <Compile Include="Sockets\PacketIO.cs" />
     <Compile Include="PacketCouriers\IPacketCourier.cs" />
+    <Compile Include="Sockets\ReliablePacketsDictionary.cs" />
     <Compile Include="Utils\MajorSectorLocator.cs" />
     <Compile Include="Utils\Util.cs" />
   </ItemGroup>

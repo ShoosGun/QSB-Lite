@@ -37,6 +37,21 @@ namespace SNet_Server.Utils
                 }, state, millisecond, -1);
             }
         }
+
+        public static void RepeatDelayedAction(int initialDelay, int delay, Func<bool> func)
+        {
+            TimerState state = new TimerState();
+
+            lock (state)
+            {
+                state.Timer = new Timer((callbackState) => {
+                    if (func())
+                    {
+                        lock (callbackState) { ((TimerState)callbackState).Timer.Dispose(); }
+                    }
+                }, state, initialDelay, delay);
+            }
+        }
     }
 }
 

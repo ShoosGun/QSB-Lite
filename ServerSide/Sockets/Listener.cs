@@ -19,6 +19,10 @@ namespace SNet_Server.Sockets
         private List<IPEndPoint> PendingConnectionVerifications;
         private const int MAX_WAITING_TIME_FOR_VERIFICATION = 2000;
 
+        private ReliablePacketHandler ReliablePackets;
+        private object ReliablePackets_LOCK = new object();
+        private const int MAX_WAITING_TIME_FOR_RELIABLE_PACKETS = 1000;
+
         private object PendingConnectionVerifications_LOCK = new object();
 
         public bool Listening
@@ -43,7 +47,9 @@ namespace SNet_Server.Sockets
             Port = port;
             s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             Clients = new Dictionary<string, IPEndPoint>();
+
             PendingConnectionVerifications = new List<IPEndPoint>();
+            ReliablePackets = new ReliablePacketHandler();
         }
         public void Start(bool anyConnections = true)
         {
@@ -267,6 +273,7 @@ namespace SNet_Server.Sockets
     {
         CONNECTION,
         PACKET,
-        DISCONNECTION
+        DISCONNECTION,
+        RELIABLE
     }
 } 
