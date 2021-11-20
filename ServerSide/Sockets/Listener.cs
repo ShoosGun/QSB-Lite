@@ -268,15 +268,18 @@ namespace SNet_Server.Sockets
 
             lock (ReliablePackets_LOCK)
             {
-                ReliablePackets.Add(dgram, out int packetID, Clients.Keys.Where((client) => !dontSendTo.Contains(client)).ToArray());
+                string[] clientsToSendTo = Clients.Keys.Where((client) => !dontSendTo.Contains(client)).ToArray();
 
-                Util.RepeatDelayedAction(MAX_WAITING_TIME_FOR_RELIABLE_PACKETS, MAX_WAITING_TIME_FOR_RELIABLE_PACKETS
-                    , () => CheckReliableSentData(packetID));
-
-                foreach (var c in Clients)
+                if (clientsToSendTo.Length > 0)
                 {
-                    if (!dontSendTo.Contains(c.Key))
-                        SendReliable(dgram, packetID, c.Key);
+                    ReliablePackets.Add(dgram, out int packetID, clientsToSendTo);
+
+                    Util.RepeatDelayedAction(MAX_WAITING_TIME_FOR_RELIABLE_PACKETS, MAX_WAITING_TIME_FOR_RELIABLE_PACKETS
+                        , () => CheckReliableSentData(packetID));
+
+                    for (int i =0; i< clientsToSendTo.Length;i++)
+                        SendReliable(dgram, packetID, clientsToSendTo[i]);
+
                 }
             }
             return true;
@@ -296,24 +299,24 @@ namespace SNet_Server.Sockets
                         SendReliable(dgram, packetID, client);
                     }
                     return true;
-                }
+            }
             return false;
         }
         private bool CheckReliableSentData(int packetID)
         {
             lock (ReliablePackets_LOCK)
             {
+                if (!ReliablePackets.TryGetValue(packetID, out ReliablePacket reliablePacket))
+                    return true;
+
                 //Checar se algum cliente que era para responder se desconectou
-                foreach (string clientsNoLongerConnected in ReliablePackets[packetID].ClientsLeftToReceive.Where((client) => !Clients.ContainsKey(client)))
+                foreach (string clientsNoLongerConnected in reliablePacket.ClientsLeftToReceive.Except(Clients.Keys))
+                    ReliablePackets.ClientReceivedData(reliablePacket.PacketID, clientsNoLongerConnected);
+                
+                if (ReliablePackets.Contains(reliablePacket))
                 {
-                    ReliablePackets.ClientReceivedData(packetID, clientsNoLongerConnected);
-                }
-
-                if (ReliablePackets.Contains(packetID))
-                {
-
-                    for (int i = 0; i < ReliablePackets[packetID].ClientsLeftToReceive.Count; i++)
-                        SendReliable(ReliablePackets[packetID].Data, packetID, ReliablePackets[packetID].ClientsLeftToReceive[i]);
+                    for (int i = 0; i < reliablePacket.ClientsLeftToReceive.Count; i++)
+                        SendReliable(reliablePacket.Data, packetID, reliablePacket.ClientsLeftToReceive[i]);
 
                     return false;
                 }

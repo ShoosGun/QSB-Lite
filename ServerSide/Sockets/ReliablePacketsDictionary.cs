@@ -4,7 +4,7 @@ namespace SNet_Server.Sockets
 { 
     public class ReliablePacketHandler : KeyedCollection<int, ReliablePacket>
     {
-        int NextGeneratedID = int.MinValue;
+        private int NextGeneratedID = int.MinValue;
 
         public void Add(byte[] packetData, out int packetID, params string[] clients)
         {
@@ -13,7 +13,7 @@ namespace SNet_Server.Sockets
             if (NextGeneratedID == int.MaxValue)
                 NextGeneratedID = int.MinValue;
             else
-                NextGeneratedID++;
+                NextGeneratedID += 1;
 
             var rP = new ReliablePacket(packetID, packetData);
             rP.ClientsLeftToReceive.AddRange(clients);
@@ -25,7 +25,7 @@ namespace SNet_Server.Sockets
 
         public void ClientReceivedData(int PacketID, string client)
         {
-            if(TryGetValue(PacketID, out ReliablePacket reliablePacket))
+            if (TryGetValue(PacketID, out ReliablePacket reliablePacket))
             {
                 reliablePacket.ClientsLeftToReceive.Remove(client);
 
