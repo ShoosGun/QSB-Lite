@@ -6,7 +6,7 @@ namespace SNet_Server.Sockets
     {
         int NextGeneratedID = int.MinValue;
 
-        public void Add(byte[] packetData, out int packetID, string[] clients)
+        public void Add(byte[] packetData, out int packetID, params string[] clients)
         {
             packetID = NextGeneratedID;
 

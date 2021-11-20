@@ -92,7 +92,7 @@ namespace SNet_Client.Sockets
                         case PacketTypes.PACKET:
                             Receive(datagramBuffer);
                             break;
-                        case PacketTypes.RELIABLE_RECEIVE:
+                        case PacketTypes.RELIABLE_RECEIVED:
                             ReceiveReliable_Receive(datagramBuffer);
                             break;
                         case PacketTypes.RELIABLE_SEND:
@@ -162,7 +162,7 @@ namespace SNet_Client.Sockets
         {
             //Resposta de que recebemos o pacote reliable
             byte[] awnserBuffer = new byte[5];
-            awnserBuffer[0] = (byte)PacketTypes.RELIABLE_RECEIVE; //Header de ter recebido
+            awnserBuffer[0] = (byte)PacketTypes.RELIABLE_RECEIVED; //Header de ter recebido
             Array.Copy(dgram, 1, awnserBuffer, 1, 4); //ID da mensagem recebida
             s.SendTo(awnserBuffer, ServerEndPoint);
             // --
@@ -230,7 +230,6 @@ namespace SNet_Client.Sockets
                 return true;//Se não existir mais pode parar
             }
         }
-
         //Client -> Server -> Client
         private void SendReliable(byte[] dgram, int packetID)
         {
@@ -256,6 +255,11 @@ namespace SNet_Client.Sockets
 
             OnDisconnection?.Invoke();
             s.Close();
+
+            lock (ReliablePackets_LOCK)
+            {
+                ReliablePackets.Clear();
+            }
         }
         
         public delegate void ReceivedData(byte[] dgram);
@@ -271,6 +275,6 @@ namespace SNet_Client.Sockets
         PACKET,
         DISCONNECTION,
         RELIABLE_SEND,
-        RELIABLE_RECEIVE
+        RELIABLE_RECEIVED
     }
 }
