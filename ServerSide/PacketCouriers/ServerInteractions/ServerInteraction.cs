@@ -70,7 +70,7 @@ namespace SNet_Server.PacketCouriers
             writer.Write((byte)SIHeaders.CONNECTED);
             writer.Write(id);
 
-            server.Send(writer.GetBytes(), HeaderValue, clientID);
+            server.SendReliable(writer.GetBytes(), HeaderValue, clientID);
         }
         private void SendRemovedOwnerID(int id)
         {
@@ -78,7 +78,7 @@ namespace SNet_Server.PacketCouriers
             writer.Write((byte)SIHeaders.OWNER_ID_REMOVED);
             writer.Write(id);
 
-            server.SendAll(writer.GetBytes(), HeaderValue);
+            server.SendAllReliable(writer.GetBytes(), HeaderValue);
         }
 
         private void ReadPacket(ref PacketReader reader, ReceivedPacketData receivedPacketData)

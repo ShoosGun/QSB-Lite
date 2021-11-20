@@ -62,9 +62,9 @@ namespace SNet_Server.PacketCouriers
             buffer.Write(prefab);
             buffer.Write(initializationData);
             if (!string.IsNullOrEmpty(clientId))
-                server.Send(buffer.GetBytes(), HeaderValue, clientId);
+                server.SendReliable(buffer.GetBytes(), HeaderValue, clientId);
             else
-                server.SendAll(buffer.GetBytes(), HeaderValue);
+                server.SendAllReliable(buffer.GetBytes(), HeaderValue);
 
             Console.WriteLine("Enviando dado da entidade de {0} (ID {1} Prefab {2}) (tamanho {3}) para os clientes", ownerID, id, prefab, initializationData.Length);
         }
@@ -118,7 +118,7 @@ namespace SNet_Server.PacketCouriers
                 buffer.Write((byte)EntityInitializerHeaders.Remove);
                 buffer.Write(ownerBuffer.ClientData.OwnerID);
                 buffer.Write(entityID);
-                server.SendAll(buffer.GetBytes(), HeaderValue);
+                server.SendAllReliable(buffer.GetBytes(), HeaderValue);
                 Console.WriteLine("Entidade de {0}, ID {1}, foi removida", receivedPacketData.ClientID, entityID);
             }
         }

@@ -59,6 +59,10 @@ namespace SNet_Server.Sockets
 
         public void SendAll(byte[] data, int header, params string[] dontSendTo) => l.SendAll(MakeDataWithHeader(data, header), dontSendTo);
 
+        public bool SendReliable(byte[] data, int header, string client) => l.SendReliable(MakeDataWithHeader(data, header), client);
+
+        public void SendAllReliable(byte[] data, int header, params string[] dontSendTo) => l.SendAllReliable(MakeDataWithHeader(data, header), dontSendTo);
+
         private void ReceivedData(ClientEssentials receivedDGram)
         {
             PacketReader packet = new PacketReader(receivedDGram.DGram);

@@ -99,7 +99,7 @@ namespace SNet_Client.PacketCouriers.Entities
 
                 buffer.WriteAsArray(initializationData.GetBytes());
 
-                Client.GetClient().Send(buffer.GetBytes(), HeaderValue);
+                Client.GetClient().SendReliable(buffer.GetBytes(), HeaderValue);
             }
         }
 
@@ -126,7 +126,7 @@ namespace SNet_Client.PacketCouriers.Entities
                 PacketWriter buffer = new PacketWriter();
                 buffer.Write((byte)EntityInitializerHeaders.Remove);
                 buffer.Write(networkedEntity.id);
-                Client.GetClient().Send(buffer.GetBytes(), HeaderValue);
+                Client.GetClient().SendReliable(buffer.GetBytes(), HeaderValue);
             }
         }
         

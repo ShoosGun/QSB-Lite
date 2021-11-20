@@ -131,6 +131,8 @@ namespace SNet_Client.Sockets
         }
         public bool Send(byte[] data, int header) => l.Send(MakeDataWithHeader(data, header));
 
+        public bool SendReliable(byte[] data, int header) => l.SendReliable(MakeDataWithHeader(data, header));
+
         private void ReceiveData(byte[] dgram)
         {
             PacketReader packet = new PacketReader(dgram);
