@@ -1,7 +1,8 @@
 ﻿using System;
-using System.Threading;
+
 using SNet_Server.PacketCouriers;
 using SNet_Server.Sockets;
+using SNet_Server.Utils;
 
 namespace SNet_Server
 {
@@ -29,19 +30,41 @@ namespace SNet_Server
                 }
             }
 
-            Console.WriteLine("Aperte alguma tecla para fechar");
+            Console.WriteLine("Aperte S , P ou ENTER para fechar");
             Server server = new Server(PORT);
 
             ServerInteraction serverInteraction = new ServerInteraction(server);
             EntityRepasser entityRepasser = new EntityRepasser(server, serverInteraction);
-            
-            while (!Console.KeyAvailable)
+
+            bool shouldServerBeOn = true;
+            object shouldServerBeOn_LOCK = new object();
+
+            bool areWeSupposedToLoop = true;
+
+            Util.RepeatDelayedAction(SERVER_TIME_STEP, SERVER_TIME_STEP, () =>
             {
                 server.CheckReceivedData();
-                Thread.Sleep(SERVER_TIME_STEP);
-            }
+                lock (shouldServerBeOn_LOCK) { return !shouldServerBeOn; }
+            });
 
-            Console.ReadKey(true);
+            while (areWeSupposedToLoop)
+            {
+                if (Console.KeyAvailable)
+                {
+                    ConsoleKeyInfo keyPressed = Console.ReadKey(true);
+
+                    switch (keyPressed.Key)
+                    {
+                        case ConsoleKey.P:
+                        case ConsoleKey.S:
+                        case ConsoleKey.Enter:
+                            lock (shouldServerBeOn_LOCK) { shouldServerBeOn = false; }
+                            server.Stop();
+                            areWeSupposedToLoop = false;
+                            break;
+                    }
+                }
+            }
         }
     }
 }
