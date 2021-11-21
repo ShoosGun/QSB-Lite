@@ -104,6 +104,7 @@ namespace SNet_Client.EntityCreators
 
             RigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<RigidbodyEntitySync>();
             rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.Both;
+            rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
 
             return networkedEntity;
         }

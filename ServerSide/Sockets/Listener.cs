@@ -8,10 +8,11 @@ using SNet_Server.Utils;
 
 namespace SNet_Server.Sockets
 {
-    //TODO Add reliable packets:
-    //1 - Mandar um pacote e marcar ele como "confiavel"
-    //2 - Pacotes "confiaveis" tem um id, e o receptor tem que enviar o id de volta
-    //3 - Quem enviou espera pelo id por um tempo t, se não receber envia novamente, se receber para de retransmitir
+    //TODO Add timeout disconects
+    //1 - Basically do the reliable packets but:
+    //    a ) the information in inside the Clients dict (it will hold the last time this client sent a message)
+    //    b ) if the client hasn't sent a message in a delta time > MAX_WAITING_TIME_FOR_VERIFICATION * 2 send a request to see if they are connected
+    //    c ) if the client hasn't responded in delta time > MAX_WAITING_TIME_FOR_VERIFICATION * 4 say that it was disconnected, reason: timeout
     public class Listener
     {
         private Dictionary<string, IPEndPoint> Clients;
@@ -180,7 +181,7 @@ namespace SNet_Server.Sockets
             {
                 var keyValuePair = Clients.First((pair) => pair.Value.Equals(sender));
                 Clients.Remove(keyValuePair.Key);
-                OnClientDisconnection?.Invoke(keyValuePair.Key);
+                OnClientDisconnection?.Invoke(keyValuePair.Key, DisconnectionType.ClosedByUser);
 
                 if (sendDisconectionMessage)
                 {
@@ -356,10 +357,11 @@ namespace SNet_Server.Sockets
         }
 
         public delegate void ClientConnection(string id);
+        public delegate void ClientDisconnection(string id, DisconnectionType reason);
         public delegate void ClientReceivedData(byte[] dgram, string id);
 
         public event ClientConnection OnClientConnection;
-        public event ClientConnection OnClientDisconnection;
+        public event ClientDisconnection OnClientDisconnection;
         public event ClientReceivedData OnClientReceivedData;
 
         /// <summary>
