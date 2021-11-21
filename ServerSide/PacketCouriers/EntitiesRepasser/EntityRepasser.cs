@@ -68,6 +68,7 @@ namespace SNet_Server.PacketCouriers
 
             Console.WriteLine("Enviando dado da entidade de {0} (ID {1} Prefab {2}) (tamanho {3}) para os clientes", ownerID, id, prefab, initializationData.Length);
         }
+
         private void SendBufferedEntitiesToNewClient(string clientID)
         {
             foreach(var entities in entityBuffer)
@@ -92,6 +93,10 @@ namespace SNet_Server.PacketCouriers
                     break;
                 case EntityInitializerHeaders.EntitySerialization:
                     TransmitEntityScriptsOnDeserialization(ref reader, receivedPacketData);
+                    break;
+                case EntityInitializerHeaders.RefreshInstantiatedEntities:
+                    Console.WriteLine("{0} requesitou refresh de entidades", receivedPacketData.ClientID);
+                    SendBufferedEntitiesToNewClient(receivedPacketData.ClientID);
                     break;
             }
         }
@@ -127,7 +132,8 @@ namespace SNet_Server.PacketCouriers
         {
             Instantiate,
             Remove,
-            EntitySerialization
+            EntitySerialization,
+            RefreshInstantiatedEntities
         }
         public enum InstantiateType : byte
         {

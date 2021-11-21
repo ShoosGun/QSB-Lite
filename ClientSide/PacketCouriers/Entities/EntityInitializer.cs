@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 
 using SNet_Client.Sockets;
-using SNet_Client.Utils;
 using UnityEngine;
 
 
@@ -112,10 +111,7 @@ namespace SNet_Client.PacketCouriers.Entities
             networkedEntity.id = ID;
             networkedEntity.ownerId = ownerID;
             Debug.Log(string.Format("{0} {1} {2}", ownerID, ID, prefabName));
-
-            if (ownerID != ServerInteraction.GetOwnerID())
-                DontDestroyOnLoad(networkedEntity.gameObject);
-
+            
             InstantiadableGameObjectsPrefabHub.ownersDictionary.AddEntity(networkedEntity);
         }
 
@@ -206,6 +202,11 @@ namespace SNet_Client.PacketCouriers.Entities
                     entity.OnDeserializeEntity(data, receivedPacketData);
             }
         }
+        public void RequestRefreshOfEntities()
+        {
+            InstantiadableGameObjectsPrefabHub.DisconnectionReset();
+            Client.GetClient().SendReliable(BitConverter.GetBytes((byte)EntityInitializerHeaders.RefreshInstantiatedEntities), HeaderValue);
+        }
 
         public void ReadPacket(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
@@ -235,7 +236,8 @@ namespace SNet_Client.PacketCouriers.Entities
         {
             Instantiate,
             Remove,
-            EntitySerialization
+            EntitySerialization,
+            RefreshInstantiatedEntities
         }
 
         public enum InstantiateType : byte

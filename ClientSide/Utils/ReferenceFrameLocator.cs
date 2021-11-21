@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 using UnityEngine;
 
@@ -33,7 +31,7 @@ namespace SNet_Client.Utils
         private static bool GetAnyOWRigidbody(out Transform reference)
         {
             reference = null;
-            OWRigidbody rigidbody = (OWRigidbody)GameObject.FindObjectOfType(typeof(OWRigidbody));
+            OWRigidbody rigidbody = (OWRigidbody)Object.FindObjectOfType(typeof(OWRigidbody));
 
             if (rigidbody == null)
                 return false;

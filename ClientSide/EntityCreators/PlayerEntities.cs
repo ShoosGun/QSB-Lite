@@ -31,7 +31,9 @@ namespace SNet_Client.EntityCreators
         }
         private void OnStartOfTimeLoop(int loop)
         {
-            if(!hasSpawnedPlayer && weHavePlayerID)
+            EntityInitializer.client_EntityInitializer.RequestRefreshOfEntities();
+
+            if (!hasSpawnedPlayer && weHavePlayerID)
                 SpawnPlayer();
         }
         private void OnResumeSimulation()

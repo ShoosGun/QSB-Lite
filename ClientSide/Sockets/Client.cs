@@ -103,9 +103,8 @@ namespace SNet_Client.Sockets
                     {
                         int amountOfDGrams = receivedData.Count;
                         for (int i = 0; i < amountOfDGrams; i++)
-                        {
                             ReceiveData(receivedData.Dequeue());
-                        }
+
                     }
                 }
                 finally
