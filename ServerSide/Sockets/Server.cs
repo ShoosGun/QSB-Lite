@@ -41,9 +41,9 @@ namespace SNet_Server.Sockets
             OnNewClient(id);
         }
 
-        private void L_OnClientDisconnection(string id)
+        private void L_OnClientDisconnection(string id, DisconnectionType disconnectionType)
         {
-            Console.WriteLine("Um cliente se desconectou ID = {0}", id);
+            Console.WriteLine("Um cliente se desconectou ID = {0}, motivo {1}", id, disconnectionType);
             OnClientDisconnection(id);
         }
 

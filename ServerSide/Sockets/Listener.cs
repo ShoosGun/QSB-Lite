@@ -8,6 +8,7 @@ using SNet_Server.Utils;
 
 namespace SNet_Server.Sockets
 {
+    //TODO consertar o timedout
     public class Listener
     {
         private Dictionary<string, IPEndPoint> Clients;
@@ -145,12 +146,6 @@ namespace SNet_Server.Sockets
                     {
                         string id = Guid.NewGuid().ToString();
                         Clients.Add(id, sender);
-
-                        lock (TimeOfLastReceivedData_LOCK)
-                        {
-                            TimeOfLastReceivedData.Add(sender, DateTime.UtcNow);
-                        }
-
                         OnClientConnection?.Invoke(id);
                     }
                     PendingConnectionVerifications.Remove(sender);
