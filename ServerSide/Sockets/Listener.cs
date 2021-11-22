@@ -20,20 +20,13 @@ namespace SNet_Server.Sockets
     public class Listener
     {
         private ClientDicitionary Clients;
-        private object Clients_LOCK = new object();
-
-        private List<IPEndPoint> PendingConnectionVerifications;
-        private object PendingConnectionVerifications_LOCK = new object();
-        private const int MAX_WAITING_TIME_FOR_VERIFICATION = 2000;
+        
+        private const int DELTA_TIME_OF_VERIFICATION_LOOP = 1000;
+        private const int MAX_WAITING_TIME_FOR_CONNECTION_VERIFICATION = 2000;
+        private const int MAX_WAITING_TIME_FOR_TIMEOUT = 4000;
 
         private ReliablePacketHandler ReliablePackets;
         private object ReliablePackets_LOCK = new object();
-        private const int MAX_WAITING_TIME_FOR_RELIABLE_PACKETS = 1000;
-
-        private Dictionary<IPEndPoint,DateTime> TimeOfLastReceivedData;
-        private object TimeOfLastReceivedData_LOCK = new object();
-        private const int MAX_WAITING_TIME_FOR_TIMEDOUT = 4000;
-
 
         public bool Listening
         {
@@ -57,9 +50,6 @@ namespace SNet_Server.Sockets
             Port = port;
             s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             Clients = new ClientDicitionary();
-
-            TimeOfLastReceivedData = new Dictionary<IPEndPoint, DateTime>();
-            PendingConnectionVerifications = new List<IPEndPoint>();
             ReliablePackets = new ReliablePacketHandler();
         }
         public void Start(bool anyConnections = true)
@@ -84,8 +74,8 @@ namespace SNet_Server.Sockets
 
             Listening = true;
 
-            //Checa se os clientes não desconectaram sem avisar
-            Util.DelayedAction(MAX_WAITING_TIME_FOR_TIMEDOUT / 2, () => { CheckIfClientsAreConnected(); });
+            //Loop de verificação de informações que dependem de tempo
+            Util.RepeatDelayedAction(DELTA_TIME_OF_VERIFICATION_LOOP, DELTA_TIME_OF_VERIFICATION_LOOP, () => TimedVerificationsLoop());
 
             byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
             s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref AllowedClients, ReceiveCallback, nextDatagramBuffer);
@@ -120,10 +110,8 @@ namespace SNet_Server.Sockets
                             break;
                     }
                 }
-                lock (TimeOfLastReceivedData_LOCK)
-                {
-                    TimeOfLastReceivedData[(IPEndPoint)sender] = DateTime.UtcNow;
-                }
+                //Diz que o cliente ainda está conectado
+                Clients.TrySetDateTime((IPEndPoint)sender, DateTime.UtcNow);
 
                 byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
                 s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref AllowedClients, ReceiveCallback, nextDatagramBuffer);
@@ -143,54 +131,83 @@ namespace SNet_Server.Sockets
             }
         }
 
+        private bool TimedVerificationsLoop()
+        {
+            DateTime currentVerificationTime = DateTime.UtcNow;
+            List<IPEndPoint> clientsToDisconnect = new List<IPEndPoint>();
+            Clients.ForEach((client)=> 
+            {
+                //1 - Checar se os clientes não estão passiveis de receber timeout (novas conecções ou não)
+                //Fazer checagem se ele pode receber timeout
+                int timeDifference = (currentVerificationTime - client.TimeOfLastPacket).Milliseconds;
+
+                if (client.IsConnected)
+                {
+                    if (timeDifference > MAX_WAITING_TIME_FOR_TIMEOUT) //Dar timeout
+                    {
+                        clientsToDisconnect.Add(client.IpEndpoint);
+                    }
+                    else if (timeDifference > MAX_WAITING_TIME_FOR_TIMEOUT / 2) //Dar aviso que ele poderá receber timeout
+                    {
+                        //Pela maneira em que está programado a resposta do cliente para mensagens com CONNECTION podemos reutiliza-las como maneira de verificar se estão conectados
+                        s.SendTo(BitConverter.GetBytes((byte)PacketTypes.CONNECTION), client.IpEndpoint);
+                    }
+                }
+                else
+                {
+                    clientsToDisconnect.Add(client.IpEndpoint);
+                }
+            });
+
+            //Dar timeout para todos os clientes que precisam
+            for(int i = 0; i< clientsToDisconnect.Count;i++)
+                Disconnections(clientsToDisconnect[i], DisconnectionType.TimedOut);
+
+            clientsToDisconnect.Clear();
+            //2 - Checar se precisa enviar novas mensagens que sejam reliable
+            lock (ReliablePackets_LOCK)
+            {
+                List<ReliablePacket> packetsToRemove = new List<ReliablePacket>();
+                foreach (ReliablePacket packet in ReliablePackets)
+                {
+                    if (packet.ClientsLeftToReceive.Count <= 0)
+                    {
+                        packetsToRemove.Add(packet);
+                    }
+                    else
+                    {
+                        //Fazer um loop e reenviar a mensagem aos clientes que faltam no packet
+                    }
+                }
+
+                //Remover pacotes em packetsToRemove
+            }
+
+            return !Listening; //Vai para esse loop se listener estiver desativado
+        }
+
         //Cliente -> Servidor -> Cliente -> Servidor
         private void Connection(byte[] dgram, IPEndPoint sender)
         {
-            lock (PendingConnectionVerifications_LOCK)
+            if (Clients.TryGet(sender, out Client client))
             {
-                if (PendingConnectionVerifications.Contains(sender))
-                {
-                    //Quer dizer que ele ainda ta conectado, então resetar a verificação de conecção
-                    if (!Clients.Contains(sender))
-                    {
-                        string id = Guid.NewGuid().ToString();
-                        Clients.Add(id, sender);
-                        OnClientConnection?.Invoke(id);
-                    }
-                    PendingConnectionVerifications.Remove(sender);
-                    return;
-                }
-                //Quer dizer que ele enviou sem necessidade
-                if (Clients.Contains(sender))
-                    return;
+                //Se ele não esta conectado antes então é uma nova conecção
+                if (!client.IsConnected)
+                    OnClientConnection?.Invoke(client.ID);
 
-                //Quer dizer que é um novo cliente, fazer o processo de enviar e receber o pedido
-                PendingConnectionVerifications.Add(sender);
+                //Se esse cliente existe então podemos definir que ele está sim conectado
+                client.IsConnected = true;
+                return;
             }
-            //Enviar que precisamos da confirmação
+            //Se não existia antes quer dizer que é um novo cliente, fazer o processo de enviar e receber o pedido e gravalo como um cliente não conectado
+             Clients.Add(Guid.NewGuid().ToString(), sender);
+
             byte[] awnserBuffer = new byte[5];
-
             awnserBuffer[0] = (byte)PacketTypes.CONNECTION;
-            Array.Copy(BitConverter.GetBytes(MAX_WAITING_TIME_FOR_TIMEDOUT), 0, awnserBuffer, 1, 4);
-
+            Array.Copy(BitConverter.GetBytes(MAX_WAITING_TIME_FOR_TIMEOUT), 0, awnserBuffer, 1, 4);
             s.SendTo(awnserBuffer, sender);
 
-            //Usar aqui possiveis dados que vieram com o dgram
-
-            //O limite de tempo para a confirmação da verificação
-            Util.DelayedAction(MAX_WAITING_TIME_FOR_VERIFICATION, ()=> { VerifyIfClientIsConnected(sender); });
-        }
-        private void VerifyIfClientIsConnected(IPEndPoint senderToVerify)
-        {
-            //Retira da lista, dizendo que o pedido é ignorado para clientes novos
-            //e se já for um cliente quer dizer que deu timedout
-            lock (PendingConnectionVerifications_LOCK)
-            {
-                PendingConnectionVerifications.Remove(senderToVerify);
-
-                if (Clients.Contains(senderToVerify))
-                    Disconnections(senderToVerify, DisconnectionType.TimedOut);
-            }
+            //Usar aqui possiveis dados que vieram com o dgram            
         }
 
         //Cliente -> Servidor -> Cliente
@@ -200,12 +217,6 @@ namespace SNet_Server.Sockets
             if (Clients.Contains(sender))
             {
                 Clients.Remove(sender, out Client client);
-
-                lock (TimeOfLastReceivedData_LOCK)
-                {
-                    TimeOfLastReceivedData.Remove(sender);
-                }
-
                 OnClientDisconnection?.Invoke(client.ID, disconnectionType);
 
                 if (sendDisconectionMessage)
@@ -215,29 +226,7 @@ namespace SNet_Server.Sockets
                 }
             }            
         }
-
-        private bool CheckIfClientsAreConnected()
-        {
-            DateTime currentTime = DateTime.UtcNow;
-            lock (TimeOfLastReceivedData_LOCK)
-            {
-                foreach(var clientTimes in TimeOfLastReceivedData)
-                {
-                    int lastReceiveDeltaTime = (currentTime - clientTimes.Value).Milliseconds;
-
-                    //Se o cliente mesmo depois MAX_WAITING_TIME_FOR_TIMEDOUT não ter enviado nada fazer o processo de confirmar se ele está conectado
-                    if (lastReceiveDeltaTime > MAX_WAITING_TIME_FOR_TIMEDOUT)
-                    {
-                        byte[] awnserBuffer = BitConverter.GetBytes((byte)PacketTypes.CONNECTION);
-                        s.SendTo(awnserBuffer, clientTimes.Key);
-
-                        Util.DelayedAction(MAX_WAITING_TIME_FOR_TIMEDOUT, () => { VerifyIfClientIsConnected(clientTimes.Key); });
-                    }
-                }
-            }
-            return !Listening;
-        }
-
+        
         private void Receive(byte[] dgram, IPEndPoint sender)
         {
             //Se o cliente está mesmo conectado então podemos receber dados dele
@@ -271,10 +260,8 @@ namespace SNet_Server.Sockets
             if (Clients.TryGet(sender, out Client client))
             {
                 int packeID = BitConverter.ToInt32(dgram, 1);
-                lock (ReliablePackets_LOCK)
-                {
-                    ReliablePackets.ClientReceivedData(packeID, client.ID);
-                }
+                if (client.ReliablePacketsToReceive.Remove(packeID, out ReliablePacket packet))
+                    packet.ClientReceived(client.ID);
             }
         }
 
@@ -313,64 +300,38 @@ namespace SNet_Server.Sockets
 
             lock (ReliablePackets_LOCK)
             {
-                List<string> clientsToSendTo = new List<string>();
+                ReliablePacket packet = ReliablePackets.Add(dgram);
+
                 Clients.ForEach((c) => 
                 {
                     if (!dontSendTo.Contains(c.ID))
-                        clientsToSendTo.Add(c.ID);
+                        c.ReliablePacketsToReceive.Add(packet.PacketID, packet);
+
                 });
 
-                if (clientsToSendTo.Count > 0)
+                if (packet.ClientsLeftToReceive.Count > 0)
                 {
-                    ReliablePackets.Add(dgram, out int packetID, clientsToSendTo.ToArray());
-
-                    Util.RepeatDelayedAction(MAX_WAITING_TIME_FOR_RELIABLE_PACKETS, MAX_WAITING_TIME_FOR_RELIABLE_PACKETS
-                        , () => CheckReliableSentData(packetID));
-
-                    for (int i =0; i< clientsToSendTo.Count; i++)
-                        SendReliable(dgram, packetID, clientsToSendTo[i]);
+                    for (int i = 0; i < packet.ClientsLeftToReceive.Count; i++)
+                        SendReliable(dgram, packet.PacketID, packet.ClientsLeftToReceive[i]);
                 }
+                else
+                    ReliablePackets.Remove(packet);
             }
             return true;
-
         }
         public bool SendReliable(byte[] dgram, string client)
         {
-            if (Clients.Contains(client) && dgram.Length < DATAGRAM_MAX_SIZE)
+            if (Clients.TryGet(client, out Client clientData) && dgram.Length < DATAGRAM_MAX_SIZE)
             {
                 lock (ReliablePackets_LOCK)
-                    {
-                        ReliablePackets.Add(dgram, out int packetID, client);
-
-                        Util.RepeatDelayedAction(MAX_WAITING_TIME_FOR_RELIABLE_PACKETS, MAX_WAITING_TIME_FOR_RELIABLE_PACKETS
-                            , () => CheckReliableSentData(packetID));
-
-                        SendReliable(dgram, packetID, client);
-                    }
-                    return true;
-            }
-            return false;
-        }
-        private bool CheckReliableSentData(int packetID)
-        {
-            lock (ReliablePackets_LOCK)
-            {
-                if (!ReliablePackets.TryGetValue(packetID, out ReliablePacket reliablePacket))
-                    return true;
-
-                //Checar se algum cliente que era para responder se desconectou
-                foreach (string clientsNoLongerConnected in reliablePacket.ClientsLeftToReceive.Except(Clients.Keys))
-                    ReliablePackets.ClientReceivedData(reliablePacket.PacketID, clientsNoLongerConnected);
-                
-                if (ReliablePackets.Contains(reliablePacket))
                 {
-                    for (int i = 0; i < reliablePacket.ClientsLeftToReceive.Count; i++)
-                        SendReliable(reliablePacket.Data, packetID, reliablePacket.ClientsLeftToReceive[i]);
-
-                    return false;
+                    ReliablePacket packet = ReliablePackets.Add(dgram,  clientData.ID);
+                    clientData.ReliablePacketsToReceive.Add(packet.PacketID, packet);
+                    SendReliable(dgram, packet.PacketID, clientData.ID);
                 }
                 return true;
             }
+            return false;
         }
         //Client -> Server -> Client
         private void SendReliable(byte[] dgram, int packetID, string client)
@@ -389,11 +350,6 @@ namespace SNet_Server.Sockets
                 return;
             Listening = false;
 
-            lock (PendingConnectionVerifications_LOCK)
-            {
-                PendingConnectionVerifications.Clear();
-            }
-
             Clients.ForEach((c) => 
             {
                 byte[] disconnectionBuffer = BitConverter.GetBytes((byte)PacketTypes.DISCONNECTION);
@@ -403,6 +359,11 @@ namespace SNet_Server.Sockets
 
             s.Close();
             Clients.Clear();
+
+            lock (ReliablePackets_LOCK)
+            {
+                ReliablePackets.Clear();
+            }
         }
 
         public delegate void ClientConnection(string id);

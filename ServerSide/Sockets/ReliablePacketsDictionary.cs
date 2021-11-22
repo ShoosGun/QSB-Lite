@@ -10,6 +10,8 @@ namespace SNet_Server.Sockets
         Dictionary<string, Client> Clients;
         Dictionary<IPEndPoint, string> IPEndpointToClientIDMap;
 
+        private object Clients_LOCK = new object();
+
         public ClientDicitionary()
         {
             Clients = new Dictionary<string, Client>();
@@ -18,52 +20,82 @@ namespace SNet_Server.Sockets
 
         public void Add(string key, IPEndPoint clientIP)
         {
-            Client client = new Client() { IpEndpoint = clientIP, ID = key };
-            Clients.Add(key, client);
-            IPEndpointToClientIDMap.Add(clientIP, key);
+            lock (Clients_LOCK)
+            {
+                Client client = new Client() { IpEndpoint = clientIP, ID = key };
+                Clients.Add(key, client);
+                IPEndpointToClientIDMap.Add(clientIP, key);
+            }
         }
 
         public void Remove(string key, out Client client)
         {
-            Clients.Remove(key, out client);
-            IPEndpointToClientIDMap.Remove(client.IpEndpoint);
+            lock (Clients_LOCK)
+            {
+                Clients.Remove(key, out client);
+                IPEndpointToClientIDMap.Remove(client.IpEndpoint);
+            }
         }
         public void Remove(IPEndPoint key, out Client client)
         {
-            IPEndpointToClientIDMap.Remove(key, out string clientID);
-            Clients.Remove(clientID, out client);
+            lock (Clients_LOCK)
+            {
+                IPEndpointToClientIDMap.Remove(key, out string clientID);
+                Clients.Remove(clientID, out client);
+
+                foreach (var p in client.ReliablePacketsToReceive)
+                    p.Value.ClientReceived(clientID);
+                
+            }
         }
 
-        public Client GetClient(string key) => Clients[key];
-        public Client GetClient(IPEndPoint key) => Clients[IPEndpointToClientIDMap[key]];
+        public Client GetClient(string key) { lock(Clients_LOCK){ return Clients[key]; } }
+        public Client GetClient(IPEndPoint key) { lock (Clients_LOCK){ return Clients[IPEndpointToClientIDMap[key]]; } }
 
-        public bool Contains(string key) => Clients.ContainsKey(key);
-        public bool Contains(IPEndPoint key) => IPEndpointToClientIDMap.ContainsKey(key);
+        public bool Contains(string key) { lock (Clients_LOCK) { return Clients.ContainsKey(key); } }
+        public bool Contains(IPEndPoint key) { lock (Clients_LOCK) { return IPEndpointToClientIDMap.ContainsKey(key); } }
 
-        public bool TryGet(string key, out Client client) => Clients.TryGetValue(key, out client);
+        public bool TryGet(string key, out Client client) { lock (Clients_LOCK) { return Clients.TryGetValue(key, out client); } }
         public bool TryGet(IPEndPoint key, out Client client)
         {
-            if(IPEndpointToClientIDMap.TryGetValue(key, out string clientID))
+            lock (Clients_LOCK)
             {
-                client = Clients[clientID];
-                return true;
+                if (IPEndpointToClientIDMap.TryGetValue(key, out string clientID))
+                {
+                    client = Clients[clientID];
+                    return true;
+                }
+                client = new Client();
+                return false;
             }
-            client = new Client();
-            return false;
+        }
+        public void TrySetDateTime(IPEndPoint key, DateTime time)
+        {
+            lock (Clients_LOCK)
+            {
+                if (IPEndpointToClientIDMap.TryGetValue(key, out string clientID))
+                    Clients[clientID].TimeOfLastPacket = time;
+            }
         }
 
         public void ForEach(Action<Client> action)
         {
-            foreach (var c in Clients)
-                action(c.Value);
+            lock (Clients_LOCK)
+            {
+                foreach (var c in Clients)
+                    action(c.Value);
+            }
         }
 
-        public int Count() => IPEndpointToClientIDMap.Count;
+        public int Count() { lock (Clients_LOCK) { return IPEndpointToClientIDMap.Count; } }
 
         public void Clear()
         {
-            Clients.Clear();
-            IPEndpointToClientIDMap.Clear();
+            lock (Clients_LOCK)
+            {
+                Clients.Clear();
+                IPEndpointToClientIDMap.Clear();
+            }
         }
     }
     public class Client
@@ -73,16 +105,23 @@ namespace SNet_Server.Sockets
         public DateTime TimeOfLastPacket;
         public bool IsConnected;
 
-        public List<ReliablePacket> ReliablePacketsToReceive;
+        public Dictionary<int, ReliablePacket> ReliablePacketsToReceive;
+
+        public Client()
+        { 
+            ReliablePacketsToReceive = new Dictionary<int, ReliablePacket>();
+            IsConnected = false;
+            TimeOfLastPacket = DateTime.UtcNow;
+        }
     }
 
     public class ReliablePacketHandler : KeyedCollection<int, ReliablePacket>
     {
         private int NextGeneratedID = int.MinValue;
 
-        public ReliablePacket Add(byte[] packetData, out int packetID, params string[] clients)
+        public ReliablePacket Add(byte[] packetData, params string[] clients)
         {
-            packetID = NextGeneratedID;
+            int packetID = NextGeneratedID;
 
             if (NextGeneratedID == int.MaxValue)
                 NextGeneratedID = int.MinValue;
@@ -93,7 +132,6 @@ namespace SNet_Server.Sockets
             rP.AddClients(clients);
 
             Add(rP);
-
             return rP;
         }
 
@@ -105,7 +143,7 @@ namespace SNet_Server.Sockets
 
         public readonly int PacketID;
         public readonly byte[] Data;
-        private List<string> ClientsLeftToReceive;
+        public List<string> ClientsLeftToReceive;
 
         public ReliablePacket(ReliablePacketHandler owner, int PacketID, byte[] Data)
         {
