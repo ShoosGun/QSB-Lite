@@ -19,9 +19,13 @@ namespace SNet_Client.Sockets
 
         private const int MAX_WAITING_TIME_FOR_VERIFICATION = 2000;
 
+        private int maxWaitingTimeForTimeoutOfTheServer = 4000;
+        private DateTime timeOfLastReceivedServerMessage;
+
         private ReliablePacketHandler ReliablePackets;
         private object ReliablePackets_LOCK = new object();
         private const int MAX_WAITING_TIME_FOR_RELIABLE_PACKETS = 1000;
+
 
         private Socket s;
         private const int DATAGRAM_MAX_SIZE = 1284;
@@ -62,7 +66,7 @@ namespace SNet_Client.Sockets
             UnityEngine.Debug.Log(string.Format("Tentando Conectar em: {0}:{1}", IP, port));
 
             Util.DelayedAction(MAX_WAITING_TIME_FOR_VERIFICATION, () =>
-             {
+            {
                  lock (Connected_LOCK)
                  {
                      Connecting = false;
@@ -72,7 +76,7 @@ namespace SNet_Client.Sockets
                          OnFailConnection?.Invoke();
                      }
                  }
-             });
+            });
             
             byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
             s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref ServerEndPoint, ReceiveCallback, nextDatagramBuffer);
@@ -109,6 +113,8 @@ namespace SNet_Client.Sockets
                     }
                 }
 
+                timeOfLastReceivedServerMessage = DateTime.UtcNow;
+
                 byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
                 s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref ServerEndPoint, ReceiveCallback, nextDatagramBuffer);
             }
@@ -133,8 +139,13 @@ namespace SNet_Client.Sockets
                 //Recebemos a confirmação que estamos conectados, portanto a verificação foi um sucesso
                 if (!Connected)
                 {
+                    //O timeout que o server nos da caso não mandemos mensagens por um periodo
+                    maxWaitingTimeForTimeoutOfTheServer = BitConverter.ToInt32(dgram, 1);
                     Connected = true;
                     OnConnection?.Invoke();
+
+
+                    Util.DelayedAction(maxWaitingTimeForTimeoutOfTheServer, () => CheckIfServerIsStillUp());
                 }
             }
             //Enviar a confirmação que recebemos a conecção
@@ -153,6 +164,19 @@ namespace SNet_Client.Sockets
             lock (Connected_LOCK)
             {
                 Connected = false;
+            }
+        }
+
+        private void CheckIfServerIsStillUp()
+        {
+            if((DateTime.UtcNow - timeOfLastReceivedServerMessage).Milliseconds > maxWaitingTimeForTimeoutOfTheServer * 6)
+            {
+                //Disconnection por timedout
+                Disconnect();
+            }
+            else
+            {
+                Util.DelayedAction(maxWaitingTimeForTimeoutOfTheServer, () => CheckIfServerIsStillUp());
             }
         }
 

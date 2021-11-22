@@ -169,7 +169,11 @@ namespace SNet_Server.Sockets
                 PendingConnectionVerifications.Add(sender);
             }
             //Enviar que precisamos da confirmação
-            byte[] awnserBuffer = BitConverter.GetBytes((byte)PacketTypes.CONNECTION);
+            byte[] awnserBuffer = new byte[5];
+
+            awnserBuffer[0] = (byte)PacketTypes.CONNECTION;
+            Array.Copy(BitConverter.GetBytes(MAX_WAITING_TIME_FOR_TIMEDOUT), 0, awnserBuffer, 1, 4);
+
             s.SendTo(awnserBuffer, sender);
 
             //Usar aqui possiveis dados que vieram com o dgram
