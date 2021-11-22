@@ -9,9 +9,18 @@ using SNet_Server.Utils;
 namespace SNet_Server.Sockets
 {
     //TODO consertar o timedout
+
+    //Ideia para refazer o reliable data:
+    //Cada Client vai ter uma lista com referencias para esses pacotes
+    //Quando for enviado a ele uma referencia é adicionada
+    //Quando foi recebido ela é removida e se usa a chamada de remoção que nela existe
+    //Quando o cliente desconectar fazer a chamada com todas da lista
+    //
+    //Também fazer a checagem ocorrer dentro de um unico "loop" que ocorrerá junto com um novo loop de checar o timeout com o Clients
     public class Listener
     {
-        private Dictionary<string, IPEndPoint> Clients;
+        private ClientDicitionary Clients;
+        private object Clients_LOCK = new object();
 
         private List<IPEndPoint> PendingConnectionVerifications;
         private object PendingConnectionVerifications_LOCK = new object();
@@ -47,7 +56,7 @@ namespace SNet_Server.Sockets
         {
             Port = port;
             s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            Clients = new Dictionary<string, IPEndPoint>();
+            Clients = new ClientDicitionary();
 
             TimeOfLastReceivedData = new Dictionary<IPEndPoint, DateTime>();
             PendingConnectionVerifications = new List<IPEndPoint>();
@@ -142,7 +151,7 @@ namespace SNet_Server.Sockets
                 if (PendingConnectionVerifications.Contains(sender))
                 {
                     //Quer dizer que ele ainda ta conectado, então resetar a verificação de conecção
-                    if (!Clients.ContainsValue(sender))
+                    if (!Clients.Contains(sender))
                     {
                         string id = Guid.NewGuid().ToString();
                         Clients.Add(id, sender);
@@ -152,7 +161,7 @@ namespace SNet_Server.Sockets
                     return;
                 }
                 //Quer dizer que ele enviou sem necessidade
-                if (Clients.ContainsValue(sender))
+                if (Clients.Contains(sender))
                     return;
 
                 //Quer dizer que é um novo cliente, fazer o processo de enviar e receber o pedido
@@ -179,7 +188,7 @@ namespace SNet_Server.Sockets
             {
                 PendingConnectionVerifications.Remove(senderToVerify);
 
-                if (Clients.ContainsValue(senderToVerify))
+                if (Clients.Contains(senderToVerify))
                     Disconnections(senderToVerify, DisconnectionType.TimedOut);
             }
         }
@@ -188,17 +197,16 @@ namespace SNet_Server.Sockets
         private void Disconnections(IPEndPoint sender, DisconnectionType disconnectionType = DisconnectionType.ClosedByUser, bool sendDisconectionMessage = true)
         {
             //Se o cliente está mesmo conectado então enviar que desconectou mesmo e uma verificação de tal fato
-            if (Clients.ContainsValue(sender))
+            if (Clients.Contains(sender))
             {
-                var keyValuePair = Clients.First((pair) => pair.Value.Equals(sender));
-                Clients.Remove(keyValuePair.Key);
+                Clients.Remove(sender, out Client client);
 
                 lock (TimeOfLastReceivedData_LOCK)
                 {
                     TimeOfLastReceivedData.Remove(sender);
                 }
 
-                OnClientDisconnection?.Invoke(keyValuePair.Key, disconnectionType);
+                OnClientDisconnection?.Invoke(client.ID, disconnectionType);
 
                 if (sendDisconectionMessage)
                 {
@@ -233,18 +241,17 @@ namespace SNet_Server.Sockets
         private void Receive(byte[] dgram, IPEndPoint sender)
         {
             //Se o cliente está mesmo conectado então podemos receber dados dele
-            if (Clients.ContainsValue(sender))
+            if (Clients.TryGet(sender, out Client client))
             {
-                var keyValuePair = Clients.First((pair) => pair.Value.Equals(sender));
                 byte[] treatedDGram = new byte[dgram.Length - 1];
                 Array.Copy(dgram, 1, treatedDGram, 0, treatedDGram.Length);
-                OnClientReceivedData?.Invoke(treatedDGram, keyValuePair.Key);
+                OnClientReceivedData?.Invoke(treatedDGram, client.ID);
             }
         }
 
         private void ReceiveReliable_Send(byte[] dgram, IPEndPoint sender)
         {
-            if (Clients.ContainsValue(sender))
+            if (Clients.TryGet(sender, out Client client))
             {
                 //Resposta de que recebemos o pacote reliable
                 byte[] awnserBuffer = new byte[5];
@@ -252,23 +259,21 @@ namespace SNet_Server.Sockets
                 Array.Copy(dgram, 1, awnserBuffer, 1, 4); //ID da mensagem recebida
                 s.SendTo(awnserBuffer, sender);
                 // --
-
-                var keyValuePair = Clients.First((pair) => pair.Value.Equals(sender));
+                
                 byte[] treatedDGram = new byte[dgram.Length - 5];
                 Array.Copy(dgram, 5, treatedDGram, 0, treatedDGram.Length);
-                OnClientReceivedData?.Invoke(treatedDGram, keyValuePair.Key);
+                OnClientReceivedData?.Invoke(treatedDGram, client.ID);
             }
         }
 
         private void ReceiveReliable_Receive(byte[] dgram, IPEndPoint sender)
         {
-            if (Clients.ContainsValue(sender))
+            if (Clients.TryGet(sender, out Client client))
             {
                 int packeID = BitConverter.ToInt32(dgram, 1);
                 lock (ReliablePackets_LOCK)
                 {
-                    var keyValuePair = Clients.First((pair) => pair.Value.Equals(sender));
-                    ReliablePackets.ClientReceivedData(packeID, keyValuePair.Key);
+                    ReliablePackets.ClientReceivedData(packeID, client.ID);
                 }
             }
         }
@@ -279,23 +284,23 @@ namespace SNet_Server.Sockets
             dataGramToSend[0] = (byte)PacketTypes.PACKET;
             Array.Copy(dgram, 0, dataGramToSend, 1, dgram.Length);
 
-            foreach (var c in Clients)
+            Clients.ForEach((c) =>
             {
-                if(!dontSendTo.Contains(c.Key))
-                    s.SendTo(dataGramToSend, c.Value);
-            }
+                if (!dontSendTo.Contains(c.ID))
+                    s.SendTo(dataGramToSend, c.IpEndpoint);
+            });
         }
 
         public bool Send(byte[] dgram, string client)
         {
-            if (Clients.TryGetValue(client, out IPEndPoint clientEndPoint) && dgram.Length < DATAGRAM_MAX_SIZE)
+            if (Clients.TryGet(client, out Client clientIP) && dgram.Length < DATAGRAM_MAX_SIZE)
             {
                 //Adicionar o header PACKET na frente da mensagem
                 byte[] dataGramToSend = new byte[dgram.Length + 1];
                 dataGramToSend[0] = (byte)PacketTypes.PACKET;
                 Array.Copy(dgram, 0, dataGramToSend, 1, dgram.Length);
 
-                s.SendTo(dataGramToSend, clientEndPoint);
+                s.SendTo(dataGramToSend, clientIP.IpEndpoint);
                 return true;
             }
             return false;
@@ -308,16 +313,21 @@ namespace SNet_Server.Sockets
 
             lock (ReliablePackets_LOCK)
             {
-                string[] clientsToSendTo = Clients.Keys.Where((client) => !dontSendTo.Contains(client)).ToArray();
-
-                if (clientsToSendTo.Length > 0)
+                List<string> clientsToSendTo = new List<string>();
+                Clients.ForEach((c) => 
                 {
-                    ReliablePackets.Add(dgram, out int packetID, clientsToSendTo);
+                    if (!dontSendTo.Contains(c.ID))
+                        clientsToSendTo.Add(c.ID);
+                });
+
+                if (clientsToSendTo.Count > 0)
+                {
+                    ReliablePackets.Add(dgram, out int packetID, clientsToSendTo.ToArray());
 
                     Util.RepeatDelayedAction(MAX_WAITING_TIME_FOR_RELIABLE_PACKETS, MAX_WAITING_TIME_FOR_RELIABLE_PACKETS
                         , () => CheckReliableSentData(packetID));
 
-                    for (int i =0; i< clientsToSendTo.Length;i++)
+                    for (int i =0; i< clientsToSendTo.Count; i++)
                         SendReliable(dgram, packetID, clientsToSendTo[i]);
                 }
             }
@@ -326,7 +336,7 @@ namespace SNet_Server.Sockets
         }
         public bool SendReliable(byte[] dgram, string client)
         {
-            if (Clients.TryGetValue(client, out IPEndPoint clientEndPoint) && dgram.Length < DATAGRAM_MAX_SIZE)
+            if (Clients.Contains(client) && dgram.Length < DATAGRAM_MAX_SIZE)
             {
                 lock (ReliablePackets_LOCK)
                     {
@@ -370,7 +380,7 @@ namespace SNet_Server.Sockets
             Array.Copy(BitConverter.GetBytes(packetID), 0, dataGramToSend, 1, 4); // Packet ID para reliable packet
 
             Array.Copy(dgram, 0, dataGramToSend, 5, dgram.Length);
-            s.SendTo(dataGramToSend, Clients[client]);
+            s.SendTo(dataGramToSend, Clients.GetClient(client).IpEndpoint);
         }
 
         public void Stop()
@@ -384,12 +394,12 @@ namespace SNet_Server.Sockets
                 PendingConnectionVerifications.Clear();
             }
 
-            foreach (var c in Clients)
+            Clients.ForEach((c) => 
             {
                 byte[] disconnectionBuffer = BitConverter.GetBytes((byte)PacketTypes.DISCONNECTION);
 
-                s.SendTo(disconnectionBuffer, c.Value);
-            }
+                s.SendTo(disconnectionBuffer, c.IpEndpoint);
+            });
 
             s.Close();
             Clients.Clear();
