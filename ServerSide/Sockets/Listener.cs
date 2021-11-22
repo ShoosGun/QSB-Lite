@@ -8,11 +8,6 @@ using SNet_Server.Utils;
 
 namespace SNet_Server.Sockets
 {
-    //TODO Add timeout disconects
-    //1 - Basically do the reliable packets but:
-    //    a ) the information in inside the Clients dict (it will hold the last time this client sent a message)
-    //    b ) if the client hasn't sent a message in a delta time > MAX_WAITING_TIME_FOR_RELIABLE_PACKETS send a request to see if they are connected
-    //    c ) if the client hasn't responded in delta time > MAX_WAITING_TIME_FOR_RELIABLE_PACKETS * 2 say that it was disconnected, reason: timeout
     public class Listener
     {
         private Dictionary<string, IPEndPoint> Clients;

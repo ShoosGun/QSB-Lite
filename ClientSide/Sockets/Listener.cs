@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
@@ -8,11 +7,6 @@ using SNet_Client.Utils;
 
 namespace SNet_Client.Sockets
 {
-    //TODO Add timeout disconects
-    //a ) Store a DateTime with the time of the last server sent package
-    //b ) If it took more then the MAX_WAITING_TIME_FOR_TIMEDOUT consider that the server is gone
-    //b.1 ) We can trust in this fact because the server will always ask if the client is connected every MAX_WAITING_TIME_FOR_TIMEDOUT miliseconds
-    //so we can just pack that data inside de Connection message and set our MAX_WAITING_TIME_FOR_TIMEDOUT to be equal to 4 times it
     public class Listener
     {
         private EndPoint ServerEndPoint;
