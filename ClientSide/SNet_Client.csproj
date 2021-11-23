@@ -69,6 +69,8 @@
     <Compile Include="Sockets\PacketIO.cs" />
     <Compile Include="PacketCouriers\IPacketCourier.cs" />
     <Compile Include="Sockets\ReliablePacketsDictionary.cs" />
+    <Compile Include="Utils\ConcurrentQueue.cs" />
+    <Compile Include="Utils\ConcurrentDictionary.cs" />
     <Compile Include="Utils\ReferenceFrameLocator.cs" />
     <Compile Include="Utils\Util.cs" />
   </ItemGroup>

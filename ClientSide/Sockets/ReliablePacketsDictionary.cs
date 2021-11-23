@@ -1,38 +1,9 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Net;
+using System.Threading;
 
 namespace SNet_Client.Sockets
-{ 
-    public class ReliablePacketHandler : KeyedCollection<int, ReliablePacket>
-    {
-        int NextGeneratedID = int.MinValue;
-
-        public void Add(byte[] packetData, out int packetID)
-        {
-            packetID = NextGeneratedID;
-
-            if (NextGeneratedID == int.MaxValue)
-                NextGeneratedID = int.MinValue;
-            else
-                NextGeneratedID++;
-
-            var rP = new ReliablePacket(packetID, packetData);
-
-            Add(rP);
-        }
-
-        protected override int GetKeyForItem(ReliablePacket reliablePacket) => reliablePacket.PacketID;
-
-        public bool ReceptorReceivedData(int PacketID) 
-        {
-            if (Dictionary.TryGetValue(PacketID, out ReliablePacket reliablePacket))
-            {
-                Remove(reliablePacket);
-                return true;
-            }
-
-            return false;
-        }
-    }
+{
     public struct ReliablePacket
     {
         public int PacketID;
@@ -41,6 +12,121 @@ namespace SNet_Client.Sockets
         {
             this.PacketID = PacketID;
             this.Data = Data;
+        }
+    }
+
+    public class Server
+    {
+        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+
+        private EndPoint ServerEndPoint;
+        private DateTime TimeOfLastReceivedMessage;
+        private bool Connecting;
+        private bool Connected;
+
+        public Server()
+        {
+            TimeOfLastReceivedMessage = DateTime.UtcNow;
+            Connecting = false;
+            Connected = false;
+        }
+
+        public void SetServerEndPoint(EndPoint ServerEndPoint)
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                this.ServerEndPoint = ServerEndPoint;
+            }
+            finally
+            {
+                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
+            }
+        }
+        public void SetTimeOfLastReceivedMessage(DateTime time)
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                TimeOfLastReceivedMessage = time;
+            }
+            finally
+            {
+                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
+            }
+        }
+        public void SetConnecting(bool b)
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                Connecting = b;
+            }
+            finally
+            {
+                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
+            }
+        }
+        public void SetConnected(bool b)
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                Connected = b;
+            }
+            finally
+            {
+                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
+            }
+        }
+
+        public EndPoint GetServerEndPoint()
+        {
+            _lock.EnterReadLock();
+            try
+            {
+                return ServerEndPoint;
+            }
+            finally
+            {
+                if (_lock.IsWriteLockHeld) _lock.ExitReadLock();
+            }
+        }
+        public DateTime GetTimeOfLastReceivedMessage()
+        {
+            _lock.EnterReadLock();
+            try
+            {
+                return TimeOfLastReceivedMessage;
+            }
+            finally
+            {
+                if (_lock.IsWriteLockHeld) _lock.ExitReadLock();
+            }
+        }
+        public bool GetConnecting()
+        {
+            _lock.EnterReadLock();
+            try
+            {
+                return Connecting;
+            }
+            finally
+            {
+                if (_lock.IsWriteLockHeld) _lock.ExitReadLock();
+            }
+        }
+        public bool GetConnected()
+        {
+            _lock.EnterReadLock();
+            try
+            {
+                return Connected;
+            }
+            finally
+            {
+                if (_lock.IsWriteLockHeld) _lock.ExitReadLock();
+            }
         }
     }
 }

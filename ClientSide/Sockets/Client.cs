@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading;
+
+using SNet_Client.Utils;
 
 
 namespace SNet_Client.Sockets
@@ -14,9 +12,9 @@ namespace SNet_Client.Sockets
         private const int serverPort = 2121;
 
         public bool Connected { private set; get; }
-
-        private readonly object receivedData_lock = new object();
-        private Queue<byte[]> receivedData = new Queue<byte[]>();
+        
+        private SNETConcurrentQueue<byte[]> receivedData = new SNETConcurrentQueue<byte[]>();
+        private const int MAX_PACKETS_TO_LOOK_EACH_LOOP = 30;
 
         public PacketReceiver packetReceiver { get; private set; }
 
@@ -50,10 +48,7 @@ namespace SNet_Client.Sockets
 
         private void L_OnReceiveData(byte[] dgram)
         {
-            lock (receivedData_lock)
-            {
-                receivedData.Enqueue(dgram);
-            }
+            receivedData.Enqueue(dgram);
         }
 
         private void L_OnDisconnection()
@@ -94,23 +89,11 @@ namespace SNet_Client.Sockets
                     Connection?.Invoke();
                 }
 
-                //Ler dados
-                bool WaspacketBuffers_LockAquired = false;
-                try
+                int amountOfPacketDequeued = 0;
+                while (receivedData.TryDequeue(out byte[] packet) && amountOfPacketDequeued < MAX_PACKETS_TO_LOOK_EACH_LOOP)
                 {
-                    WaspacketBuffers_LockAquired = Monitor.TryEnter(receivedData_lock, 10);
-                    if (WaspacketBuffers_LockAquired)
-                    {
-                        int amountOfDGrams = receivedData.Count;
-                        for (int i = 0; i < amountOfDGrams; i++)
-                            ReceiveData(receivedData.Dequeue());
-
-                    }
-                }
-                finally
-                {
-                    if(WaspacketBuffers_LockAquired)
-                        Monitor.Exit(receivedData_lock);
+                    ReceiveData(packet);
+                    amountOfPacketDequeued++;
                 }
             }
             else if (wasConnected)
