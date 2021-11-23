@@ -8,25 +8,13 @@ using SNet_Server.Utils;
 
 namespace SNet_Server.Sockets
 {
-    //TODO consertar o timedout
-
-    //Ideia para refazer o reliable data:
-    //Cada Client vai ter uma lista com referencias para esses pacotes
-    //Quando for enviado a ele uma referencia é adicionada
-    //Quando foi recebido ela é removida e se usa a chamada de remoção que nela existe
-    //Quando o cliente desconectar fazer a chamada com todas da lista
-    //
-    //Também fazer a checagem ocorrer dentro de um unico "loop" que ocorrerá junto com um novo loop de checar o timeout com o Clients
     public class Listener
     {
         private ClientDicitionary Clients;
-        
+
         private const int DELTA_TIME_OF_VERIFICATION_LOOP = 1000;
         private const int MAX_WAITING_TIME_FOR_CONNECTION_VERIFICATION = 2000;
         private const int MAX_WAITING_TIME_FOR_TIMEOUT = 4000;
-
-        private ReliablePacketHandler ReliablePackets;
-        private object ReliablePackets_LOCK = new object();
 
         public bool Listening
         {
@@ -50,7 +38,6 @@ namespace SNet_Server.Sockets
             Port = port;
             s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             Clients = new ClientDicitionary();
-            ReliablePackets = new ReliablePacketHandler();
         }
         public void Start(bool anyConnections = true)
         {
@@ -88,7 +75,7 @@ namespace SNet_Server.Sockets
             {
                 byte[] datagramBuffer = (byte[])ar.AsyncState;
                 int datagramSize = s.EndReceiveFrom(ar, ref sender);
-                
+
                 if (datagramSize > 0)
                 {
                     switch ((PacketTypes)datagramBuffer[0])
@@ -134,41 +121,43 @@ namespace SNet_Server.Sockets
         private bool TimedVerificationsLoop()
         {
             DateTime currentVerificationTime = DateTime.UtcNow;
-            List<IPEndPoint> clientsToDisconnect = new List<IPEndPoint>();
-            Clients.ForEach((client)=> 
+            Clients.FreeLockedManipulation((clients, ipMaps, reliablePackets) =>
             {
+                List<IPEndPoint> clientsToDisconnect = new List<IPEndPoint>();
+
                 //1 - Checar se os clientes não estão passiveis de receber timeout (novas conecções ou não)
                 //Fazer checagem se ele pode receber timeout
-                int timeDifference = (currentVerificationTime - client.TimeOfLastPacket).Milliseconds;
-
-                if (client.IsConnected)
+                foreach (Client client in clients.Values)
                 {
-                    if (timeDifference > MAX_WAITING_TIME_FOR_TIMEOUT) //Dar timeout
+                    int timeDifference = (currentVerificationTime - client.TimeOfLastPacket).Milliseconds;
+
+                    if (client.IsConnected)
+                    {
+                        if (timeDifference > MAX_WAITING_TIME_FOR_TIMEOUT) //Dar timeout
+                        {
+                            clientsToDisconnect.Add(client.IpEndpoint);
+                        }
+                        else if (timeDifference > MAX_WAITING_TIME_FOR_TIMEOUT / 2) //Dar aviso que ele poderá receber timeout
+                        {
+                            //Pela maneira em que está programado a resposta do cliente para mensagens com CONNECTION podemos reutiliza-las como maneira de verificar se estão conectados
+                            s.SendTo(BitConverter.GetBytes((byte)PacketTypes.CONNECTION), client.IpEndpoint);
+                        }
+                    }
+                    else if (timeDifference > MAX_WAITING_TIME_FOR_CONNECTION_VERIFICATION) //Dar timeout por não ter respondido a tempo
                     {
                         clientsToDisconnect.Add(client.IpEndpoint);
                     }
-                    else if (timeDifference > MAX_WAITING_TIME_FOR_TIMEOUT / 2) //Dar aviso que ele poderá receber timeout
-                    {
-                        //Pela maneira em que está programado a resposta do cliente para mensagens com CONNECTION podemos reutiliza-las como maneira de verificar se estão conectados
-                        s.SendTo(BitConverter.GetBytes((byte)PacketTypes.CONNECTION), client.IpEndpoint);
-                    }
                 }
-                else
-                {
-                    clientsToDisconnect.Add(client.IpEndpoint);
-                }
-            });
 
-            //Dar timeout para todos os clientes que precisam
-            for(int i = 0; i< clientsToDisconnect.Count;i++)
-                Disconnections(clientsToDisconnect[i], DisconnectionType.TimedOut);
+                //Dar timeout para todos os clientes que precisam
+                for (int i = 0; i < clientsToDisconnect.Count; i++)
+                    Disconnections(clientsToDisconnect[i], DisconnectionType.TimedOut);
 
-            clientsToDisconnect.Clear();
-            //2 - Checar se precisa enviar novas mensagens que sejam reliable
-            lock (ReliablePackets_LOCK)
-            {
+                clientsToDisconnect.Clear();
+
+                //2 - Checar se precisa enviar novas mensagens que sejam reliable
                 List<ReliablePacket> packetsToRemove = new List<ReliablePacket>();
-                foreach (ReliablePacket packet in ReliablePackets)
+                foreach (ReliablePacket packet in reliablePackets)
                 {
                     if (packet.ClientsLeftToReceive.Count <= 0)
                     {
@@ -176,31 +165,33 @@ namespace SNet_Server.Sockets
                     }
                     else
                     {
-                        //Fazer um loop e reenviar a mensagem aos clientes que faltam no packet
+                        for (int i = 0; i < packet.ClientsLeftToReceive.Count; i++)
+                            SendReliable(packet.Data, packet.PacketID, packet.ClientsLeftToReceive[i]);
                     }
                 }
-
-                //Remover pacotes em packetsToRemove
-            }
-
-            return !Listening; //Vai para esse loop se listener estiver desativado
+                for (int i = 0; i < packetsToRemove.Count; i++)
+                    reliablePackets.Remove(packetsToRemove[i]);
+            });
+            return !Listening; //Vai parar esse loop se listener estiver desativado
         }
 
         //Cliente -> Servidor -> Cliente -> Servidor
         private void Connection(byte[] dgram, IPEndPoint sender)
         {
-            if (Clients.TryGet(sender, out Client client))
+            bool clientExists = Clients.TryManipulateClient(sender, (client) =>
             {
-                //Se ele não esta conectado antes então é uma nova conecção
                 if (!client.IsConnected)
                     OnClientConnection?.Invoke(client.ID);
 
                 //Se esse cliente existe então podemos definir que ele está sim conectado
                 client.IsConnected = true;
+            });
+
+            if (clientExists)
                 return;
-            }
+
             //Se não existia antes quer dizer que é um novo cliente, fazer o processo de enviar e receber o pedido e gravalo como um cliente não conectado
-             Clients.Add(Guid.NewGuid().ToString(), sender);
+            Clients.Add(Guid.NewGuid().ToString(), sender);
 
             byte[] awnserBuffer = new byte[5];
             awnserBuffer[0] = (byte)PacketTypes.CONNECTION;
@@ -214,9 +205,8 @@ namespace SNet_Server.Sockets
         private void Disconnections(IPEndPoint sender, DisconnectionType disconnectionType = DisconnectionType.ClosedByUser, bool sendDisconectionMessage = true)
         {
             //Se o cliente está mesmo conectado então enviar que desconectou mesmo e uma verificação de tal fato
-            if (Clients.Contains(sender))
+            if (Clients.Remove(sender, out Client client))
             {
-                Clients.Remove(sender, out Client client);
                 OnClientDisconnection?.Invoke(client.ID, disconnectionType);
 
                 if (sendDisconectionMessage)
@@ -224,45 +214,54 @@ namespace SNet_Server.Sockets
                     byte[] awnserBuffer = BitConverter.GetBytes((byte)PacketTypes.DISCONNECTION);
                     s.SendTo(awnserBuffer, sender);
                 }
-            }            
+            }
         }
-        
+
         private void Receive(byte[] dgram, IPEndPoint sender)
         {
-            //Se o cliente está mesmo conectado então podemos receber dados dele
-            if (Clients.TryGet(sender, out Client client))
+            Clients.TryManipulateClient(sender, (client) =>
             {
+                //Se o cliente está mesmo conectado então podemos receber dados dele
+                if (!client.IsConnected)
+                    return;
+
                 byte[] treatedDGram = new byte[dgram.Length - 1];
                 Array.Copy(dgram, 1, treatedDGram, 0, treatedDGram.Length);
                 OnClientReceivedData?.Invoke(treatedDGram, client.ID);
-            }
+            });
         }
 
         private void ReceiveReliable_Send(byte[] dgram, IPEndPoint sender)
         {
-            if (Clients.TryGet(sender, out Client client))
+            Clients.TryManipulateClient(sender, (client) =>
             {
+                if (!client.IsConnected)
+                    return;
+
                 //Resposta de que recebemos o pacote reliable
                 byte[] awnserBuffer = new byte[5];
                 awnserBuffer[0] = (byte)PacketTypes.RELIABLE_RECEIVED; //Header de ter recebido
                 Array.Copy(dgram, 1, awnserBuffer, 1, 4); //ID da mensagem recebida
                 s.SendTo(awnserBuffer, sender);
                 // --
-                
+
                 byte[] treatedDGram = new byte[dgram.Length - 5];
                 Array.Copy(dgram, 5, treatedDGram, 0, treatedDGram.Length);
                 OnClientReceivedData?.Invoke(treatedDGram, client.ID);
-            }
+            });
         }
 
         private void ReceiveReliable_Receive(byte[] dgram, IPEndPoint sender)
         {
-            if (Clients.TryGet(sender, out Client client))
+            Clients.TryManipulateClient(sender, (client) =>
             {
+                if (!client.IsConnected)
+                    return;
+
                 int packeID = BitConverter.ToInt32(dgram, 1);
                 if (client.ReliablePacketsToReceive.Remove(packeID, out ReliablePacket packet))
                     packet.ClientReceived(client.ID);
-            }
+            });
         }
 
         public void SendAll(byte[] dgram, params string[] dontSendTo)
@@ -271,26 +270,35 @@ namespace SNet_Server.Sockets
             dataGramToSend[0] = (byte)PacketTypes.PACKET;
             Array.Copy(dgram, 0, dataGramToSend, 1, dgram.Length);
 
-            Clients.ForEach((c) =>
+            Clients.ClientForEach((c) =>
             {
-                if (!dontSendTo.Contains(c.ID))
+                if (!dontSendTo.Contains(c.ID) && c.IsConnected)
                     s.SendTo(dataGramToSend, c.IpEndpoint);
             });
         }
 
         public bool Send(byte[] dgram, string client)
         {
-            if (Clients.TryGet(client, out Client clientIP) && dgram.Length < DATAGRAM_MAX_SIZE)
+            if (dgram.Length >= DATAGRAM_MAX_SIZE)
+                return false;
+
+            bool isClientConnected = false;
+            Clients.TryManipulateClient(client, (clientIP) =>
             {
+                if (!clientIP.IsConnected)
+                    return;
+
+                isClientConnected = true;
+
                 //Adicionar o header PACKET na frente da mensagem
                 byte[] dataGramToSend = new byte[dgram.Length + 1];
                 dataGramToSend[0] = (byte)PacketTypes.PACKET;
                 Array.Copy(dgram, 0, dataGramToSend, 1, dgram.Length);
 
                 s.SendTo(dataGramToSend, clientIP.IpEndpoint);
-                return true;
-            }
-            return false;
+            });
+
+            return isClientConnected;
         }
 
         public bool SendAllReliable(byte[] dgram, params string[] dontSendTo)
@@ -298,37 +306,38 @@ namespace SNet_Server.Sockets
             if (dgram.Length >= DATAGRAM_MAX_SIZE)
                 return false;
 
-            lock (ReliablePackets_LOCK)
+            Clients.FreeLockedManipulation((clients, ipMaps, reliablePackets) =>
             {
-                ReliablePacket packet = ReliablePackets.Add(dgram);
+                ReliablePacket packet = reliablePackets.Add(dgram);
 
-                Clients.ForEach((c) => 
+                foreach (Client c in clients.Values)
                 {
-                    if (!dontSendTo.Contains(c.ID))
+                    if (!dontSendTo.Contains(c.ID) && c.IsConnected)
+                    {
                         c.ReliablePacketsToReceive.Add(packet.PacketID, packet);
-
-                });
-
-                if (packet.ClientsLeftToReceive.Count > 0)
-                {
-                    for (int i = 0; i < packet.ClientsLeftToReceive.Count; i++)
-                        SendReliable(dgram, packet.PacketID, packet.ClientsLeftToReceive[i]);
+                        SendReliable(dgram, packet.PacketID, c.ID);
+                    }
                 }
-                else
-                    ReliablePackets.Remove(packet);
-            }
+
+                //Se não tem ninguem para receber pode remover
+                if (packet.ClientsLeftToReceive.Count <= 0)
+                    reliablePackets.Remove(packet);
+            });
             return true;
         }
         public bool SendReliable(byte[] dgram, string client)
         {
-            if (Clients.TryGet(client, out Client clientData) && dgram.Length < DATAGRAM_MAX_SIZE)
+            if (dgram.Length < DATAGRAM_MAX_SIZE)
             {
-                lock (ReliablePackets_LOCK)
+                Clients.FreeLockedManipulation((clients, ipMaps, reliablePackets) =>
                 {
-                    ReliablePacket packet = ReliablePackets.Add(dgram,  clientData.ID);
-                    clientData.ReliablePacketsToReceive.Add(packet.PacketID, packet);
-                    SendReliable(dgram, packet.PacketID, clientData.ID);
-                }
+                    if (clients.TryGetValue(client, out Client clientData))
+                    {
+                        ReliablePacket packet = reliablePackets.Add(dgram, clientData.ID);
+                        clientData.ReliablePacketsToReceive.Add(packet.PacketID, packet);
+                        SendReliable(dgram, packet.PacketID, clientData.ID);
+                    }
+                });
                 return true;
             }
             return false;
@@ -350,20 +359,14 @@ namespace SNet_Server.Sockets
                 return;
             Listening = false;
 
-            Clients.ForEach((c) => 
+            Clients.ClientForEach((c) =>
             {
                 byte[] disconnectionBuffer = BitConverter.GetBytes((byte)PacketTypes.DISCONNECTION);
-
                 s.SendTo(disconnectionBuffer, c.IpEndpoint);
             });
 
             s.Close();
             Clients.Clear();
-
-            lock (ReliablePackets_LOCK)
-            {
-                ReliablePackets.Clear();
-            }
         }
 
         public delegate void ClientConnection(string id);
@@ -400,4 +403,4 @@ namespace SNet_Server.Sockets
         RELIABLE_SEND,
         RELIABLE_RECEIVED
     }
-} 
+}

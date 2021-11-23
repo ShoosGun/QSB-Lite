@@ -10,12 +10,16 @@ namespace SNet_Server.Sockets
         Dictionary<string, Client> Clients;
         Dictionary<IPEndPoint, string> IPEndpointToClientIDMap;
 
+        private ReliablePacketHandler ReliablePackets;
+
         private object Clients_LOCK = new object();
 
         public ClientDicitionary()
         {
             Clients = new Dictionary<string, Client>();
             IPEndpointToClientIDMap = new Dictionary<IPEndPoint, string>();
+
+            ReliablePackets = new ReliablePacketHandler();
         }
 
         public void Add(string key, IPEndPoint clientIP)
@@ -28,24 +32,27 @@ namespace SNet_Server.Sockets
             }
         }
 
-        public void Remove(string key, out Client client)
+        public bool Remove(string key, out Client client)
         {
             lock (Clients_LOCK)
             {
-                Clients.Remove(key, out client);
+                bool result = Clients.Remove(key, out client);
                 IPEndpointToClientIDMap.Remove(client.IpEndpoint);
+
+                return result;
             }
         }
-        public void Remove(IPEndPoint key, out Client client)
+        public bool Remove(IPEndPoint key, out Client client)
         {
             lock (Clients_LOCK)
             {
                 IPEndpointToClientIDMap.Remove(key, out string clientID);
-                Clients.Remove(clientID, out client);
+                bool result =  Clients.Remove(clientID, out client);
 
                 foreach (var p in client.ReliablePacketsToReceive)
                     p.Value.ClientReceived(clientID);
-                
+
+                return result;
             }
         }
 
@@ -78,12 +85,53 @@ namespace SNet_Server.Sockets
             }
         }
 
-        public void ForEach(Action<Client> action)
+        public void ClientForEach(Action<Client> action)
         {
             lock (Clients_LOCK)
             {
                 foreach (var c in Clients)
                     action(c.Value);
+            }
+        }
+        public void ReliablePacketForEach(Action<ReliablePacket> action)
+        {
+            lock (Clients_LOCK)
+            {
+                foreach (var p in ReliablePackets)
+                    action(p);
+            }
+        }
+
+        public void FreeLockedManipulation(Action<Dictionary<string, Client>, Dictionary<IPEndPoint, string>, ReliablePacketHandler> action)
+        {
+            lock (Clients_LOCK)
+            {
+                action(Clients, IPEndpointToClientIDMap, ReliablePackets);
+            }
+        }
+
+        public bool TryManipulateClient(IPEndPoint key, Action<Client> action)
+        {
+            lock (Clients_LOCK)
+            {
+                if (IPEndpointToClientIDMap.TryGetValue(key, out string clientID))
+                {
+                    action(Clients[clientID]);
+                    return true;
+                }
+                return false;
+            }
+        }
+        public bool TryManipulateClient(string key, Action<Client> action)
+        {
+            lock (Clients_LOCK)
+            {
+                if (Clients.TryGetValue(key, out Client client))
+                {
+                    action(client);
+                    return true;
+                }
+                return false;
             }
         }
 
@@ -95,6 +143,7 @@ namespace SNet_Server.Sockets
             {
                 Clients.Clear();
                 IPEndpointToClientIDMap.Clear();
+                ReliablePackets.Clear();
             }
         }
     }
