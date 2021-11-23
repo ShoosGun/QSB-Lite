@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading;
+using System.Collections.Concurrent;
 
 using SNet_Server.Utils;
 
@@ -10,15 +9,14 @@ namespace SNet_Server.Sockets
     {
         private Listener l;
         
-        private Queue<ClientEssentials> ReceivedDataCache;
-        private readonly object RDC_lock = new object();
+        private ConcurrentQueue<ClientEssentials> ReceivedDataCache;
         
         public PacketReceiver PacketReceiver { get; private set; }
         
         public Server(int port)
         {
             PacketReceiver = new PacketReceiver();
-            ReceivedDataCache = new Queue<ClientEssentials>();
+            ReceivedDataCache = new ConcurrentQueue<ClientEssentials>();
 
             l = new Listener(port);
             l.OnClientConnection += L_OnClientConnection;
@@ -29,10 +27,7 @@ namespace SNet_Server.Sockets
 
         private void L_OnClientReceivedData(byte[] dgram, string id)
         {
-            lock (RDC_lock)
-            {
-                ReceivedDataCache.Enqueue(new ClientEssentials(id, dgram));
-            }
+            ReceivedDataCache.Enqueue(new ClientEssentials(id, dgram));
         }
 
         private void L_OnClientConnection(string id)
@@ -80,34 +75,12 @@ namespace SNet_Server.Sockets
             }
         }
 
-        /// <summary>
-        ///  Handles the new packets sent by all the clients on the in-game loop
-        /// </summary>
-        /// <param name="receivedData">Holds the packets in an array separated by the clients ids</param>
-        /// <param name="resetDataArrays"></param>
-        private void ReceivedData(Queue<ClientEssentials> receivedData)
-        {
-            int amountOfDGrams = receivedData.Count;
-            for (int i =0; i< amountOfDGrams; i++)
-            {
-                ReceivedData(receivedData.Dequeue());
-            }
-        }
+        
         
         public void CheckReceivedData()
         {
-            bool WasRDC_LockAquired = false;
-            try
-            {
-                Monitor.TryEnter(RDC_lock, 10, ref WasRDC_LockAquired);
-                if (WasRDC_LockAquired)
-                    ReceivedData(ReceivedDataCache);
-            }
-            finally
-            {
-                if (WasRDC_LockAquired)
-                    Monitor.Exit(RDC_lock);
-            }
+            while (ReceivedDataCache.TryDequeue(out ClientEssentials clientEssentials))
+                ReceivedData(clientEssentials);
         }
 
         public void Stop()
