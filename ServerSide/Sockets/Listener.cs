@@ -121,6 +121,7 @@ namespace SNet_Server.Sockets
         private bool TimedVerificationsLoop()
         {
             DateTime currentVerificationTime = DateTime.UtcNow;
+
             Clients.FreeLockedManipulation((clients, ipMaps, reliablePackets) =>
             {
                 List<IPEndPoint> clientsToDisconnect = new List<IPEndPoint>();
@@ -219,36 +220,46 @@ namespace SNet_Server.Sockets
 
         private void Receive(byte[] dgram, IPEndPoint sender)
         {
-            Clients.TryManipulateClient(sender, (client) =>
+            string clientID = "";
+            bool result = Clients.TryManipulateClient(sender, (client) =>
             {
                 //Se o cliente está mesmo conectado então podemos receber dados dele
-                if (!client.IsConnected)
-                    return;
-
-                byte[] treatedDGram = new byte[dgram.Length - 1];
-                Array.Copy(dgram, 1, treatedDGram, 0, treatedDGram.Length);
-                OnClientReceivedData?.Invoke(treatedDGram, client.ID);
+                if (client.IsConnected)
+                    clientID = client.ID;
             });
+
+            if (!result)
+                return;
+
+            byte[] treatedDGram = new byte[dgram.Length - 1];
+            Array.Copy(dgram, 1, treatedDGram, 0, treatedDGram.Length);
+            OnClientReceivedData?.Invoke(treatedDGram, clientID);
+
         }
 
         private void ReceiveReliable_Send(byte[] dgram, IPEndPoint sender)
         {
-            Clients.TryManipulateClient(sender, (client) =>
+            string clientID = "";
+            bool result = Clients.TryManipulateClient(sender, (client) =>
             {
-                if (!client.IsConnected)
-                    return;
-
-                //Resposta de que recebemos o pacote reliable
-                byte[] awnserBuffer = new byte[5];
-                awnserBuffer[0] = (byte)PacketTypes.RELIABLE_RECEIVED; //Header de ter recebido
-                Array.Copy(dgram, 1, awnserBuffer, 1, 4); //ID da mensagem recebida
-                s.SendTo(awnserBuffer, sender);
-                // --
-
-                byte[] treatedDGram = new byte[dgram.Length - 5];
-                Array.Copy(dgram, 5, treatedDGram, 0, treatedDGram.Length);
-                OnClientReceivedData?.Invoke(treatedDGram, client.ID);
+                //Se o cliente está mesmo conectado então podemos receber dados dele
+                if (client.IsConnected)
+                    clientID = client.ID;
             });
+
+            if (!result)
+                return;
+
+            //Resposta de que recebemos o pacote reliable
+            byte[] awnserBuffer = new byte[5];
+            awnserBuffer[0] = (byte)PacketTypes.RELIABLE_RECEIVED; //Header de ter recebido
+            Array.Copy(dgram, 1, awnserBuffer, 1, 4); //ID da mensagem recebida
+            s.SendTo(awnserBuffer, sender);
+            // --
+
+            byte[] treatedDGram = new byte[dgram.Length - 5];
+            Array.Copy(dgram, 5, treatedDGram, 0, treatedDGram.Length);
+            OnClientReceivedData?.Invoke(treatedDGram, clientID);
         }
 
         private void ReceiveReliable_Receive(byte[] dgram, IPEndPoint sender)
@@ -282,23 +293,25 @@ namespace SNet_Server.Sockets
             if (dgram.Length >= DATAGRAM_MAX_SIZE)
                 return false;
 
-            bool isClientConnected = false;
-            Clients.TryManipulateClient(client, (clientIP) =>
+            IPEndPoint clientIP = null;
+            bool result = Clients.TryManipulateClient(client, (clientData) =>
             {
-                if (!clientIP.IsConnected)
-                    return;
-
-                isClientConnected = true;
-
-                //Adicionar o header PACKET na frente da mensagem
-                byte[] dataGramToSend = new byte[dgram.Length + 1];
-                dataGramToSend[0] = (byte)PacketTypes.PACKET;
-                Array.Copy(dgram, 0, dataGramToSend, 1, dgram.Length);
-
-                s.SendTo(dataGramToSend, clientIP.IpEndpoint);
+                //Se o cliente está mesmo conectado então podemos receber dados dele
+                if (clientData.IsConnected)
+                    clientIP = clientData.IpEndpoint;
             });
 
-            return isClientConnected;
+            if (!result)
+                return false;
+
+            //Adicionar o header PACKET na frente da mensagem
+            byte[] dataGramToSend = new byte[dgram.Length + 1];
+            dataGramToSend[0] = (byte)PacketTypes.PACKET;
+            Array.Copy(dgram, 0, dataGramToSend, 1, dgram.Length);
+
+            s.SendTo(dataGramToSend, clientIP);
+
+            return true;
         }
 
         public bool SendAllReliable(byte[] dgram, params string[] dontSendTo)
@@ -359,9 +372,10 @@ namespace SNet_Server.Sockets
                 return;
             Listening = false;
 
+            byte[] disconnectionBuffer = BitConverter.GetBytes((byte)PacketTypes.DISCONNECTION);
+
             Clients.ClientForEach((c) =>
             {
-                byte[] disconnectionBuffer = BitConverter.GetBytes((byte)PacketTypes.DISCONNECTION);
                 s.SendTo(disconnectionBuffer, c.IpEndpoint);
             });
 

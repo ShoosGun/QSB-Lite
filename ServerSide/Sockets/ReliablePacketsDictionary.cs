@@ -36,17 +36,22 @@ namespace SNet_Server.Sockets
         {
             lock (Clients_LOCK)
             {
-                bool result = Clients.Remove(key, out client);
-                IPEndpointToClientIDMap.Remove(client.IpEndpoint);
+                if (!Clients.Remove(key, out client))
+                    return false;
+
+                bool result = IPEndpointToClientIDMap.Remove(client.IpEndpoint);
 
                 return result;
             }
         }
         public bool Remove(IPEndPoint key, out Client client)
         {
+            client = new Client();
             lock (Clients_LOCK)
             {
-                IPEndpointToClientIDMap.Remove(key, out string clientID);
+                if (!IPEndpointToClientIDMap.Remove(key, out string clientID))
+                    return false;
+
                 bool result =  Clients.Remove(clientID, out client);
 
                 foreach (var p in client.ReliablePacketsToReceive)
