@@ -33,13 +33,13 @@ namespace SNet_Client.Sockets
         /// <param name="IP"></param>
         public void TryConnect(string IP, int port)
         {
-                if (server.GetConnecting() || server.GetConnected())
-                    return;
+            if (server.GetConnecting() || server.GetConnected())
+                return;
 
             server.SetConnecting(true);
 
 
-        s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             s.Bind(new IPEndPoint(IPAddress.Any, 0));
 
             EndPoint serverEndpoint = new IPEndPoint(IPAddress.Parse(IP), port);
@@ -56,12 +56,11 @@ namespace SNet_Client.Sockets
                 if (!server.GetConnected())
                 {
                     server.SetConnecting(false);
-
                     s.Close();
                     OnFailConnection?.Invoke();
                 }
             });
-            
+
             byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
             s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref serverEndpoint, ReceiveCallback, nextDatagramBuffer);
         }
@@ -124,6 +123,8 @@ namespace SNet_Client.Sockets
             {
                 //O timeout que o server nos da caso não mandemos mensagens por um periodo
                 maxWaitingTimeForTimeoutOfTheServer = BitConverter.ToInt32(dgram, 1);
+
+                server.SetConnecting(false);
                 server.SetConnected(true);
                 OnConnection?.Invoke();
 
@@ -143,6 +144,7 @@ namespace SNet_Client.Sockets
             OnDisconnection?.Invoke();
 
             server.SetConnected(false);
+            server.SetConnecting(false);
         }
 
         private void CheckIfServerIsStillUp()

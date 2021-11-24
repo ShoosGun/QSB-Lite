@@ -17,7 +17,7 @@ namespace SNet_Client.Sockets
 
     public class Server
     {
-        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private readonly object _lock = new object();
 
         private EndPoint ServerEndPoint;
         private DateTime TimeOfLastReceivedMessage;
@@ -33,99 +33,59 @@ namespace SNet_Client.Sockets
 
         public void SetServerEndPoint(EndPoint ServerEndPoint)
         {
-            _lock.EnterWriteLock();
-            try
-            {
+            lock (_lock)
+            { 
                 this.ServerEndPoint = ServerEndPoint;
-            }
-            finally
-            {
-                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
             }
         }
         public void SetTimeOfLastReceivedMessage(DateTime time)
         {
-            _lock.EnterWriteLock();
-            try
+            lock (_lock)
             {
                 TimeOfLastReceivedMessage = time;
-            }
-            finally
-            {
-                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
             }
         }
         public void SetConnecting(bool b)
         {
-            _lock.EnterWriteLock();
-            try
+            lock (_lock)
             {
                 Connecting = b;
-            }
-            finally
-            {
-                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
             }
         }
         public void SetConnected(bool b)
         {
-            _lock.EnterWriteLock();
-            try
+            lock (_lock)
             {
                 Connected = b;
-            }
-            finally
-            {
-                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
             }
         }
 
         public EndPoint GetServerEndPoint()
         {
-            _lock.EnterReadLock();
-            try
+            lock (_lock)
             {
                 return ServerEndPoint;
-            }
-            finally
-            {
-                if (_lock.IsWriteLockHeld) _lock.ExitReadLock();
             }
         }
         public DateTime GetTimeOfLastReceivedMessage()
         {
-            _lock.EnterReadLock();
-            try
+            lock (_lock)
             {
                 return TimeOfLastReceivedMessage;
-            }
-            finally
-            {
-                if (_lock.IsWriteLockHeld) _lock.ExitReadLock();
             }
         }
         public bool GetConnecting()
         {
-            _lock.EnterReadLock();
-            try
+            lock (_lock)
             {
                 return Connecting;
-            }
-            finally
-            {
-                if (_lock.IsWriteLockHeld) _lock.ExitReadLock();
             }
         }
         public bool GetConnected()
         {
-            _lock.EnterReadLock();
-            try
+            lock (_lock)
             {
                 return Connected;
-            }
-            finally
-            {
-                if (_lock.IsWriteLockHeld) _lock.ExitReadLock();
             }
         }
     }

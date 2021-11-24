@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
+﻿using System.Collections.Generic;
 
 namespace SNet_Client.Utils
 {
@@ -9,14 +6,13 @@ namespace SNet_Client.Utils
     {
         private Queue<T> InternalQueue = new Queue<T>();
 
-        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private readonly object _lock = new object();
 
         public bool TryDequeue(out T value)
         {
             value = default(T);
-            _lock.EnterWriteLock();
-            try
-            {
+            lock (_lock)
+            { 
                 if (InternalQueue.Count > 0)
                 {
                     value = InternalQueue.Dequeue();
@@ -24,22 +20,13 @@ namespace SNet_Client.Utils
                 }
                 return false;
             }
-            finally
-            {
-                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
-            }
         }
 
         public void Enqueue(T value)
         {
-            _lock.EnterWriteLock();
-            try
+            lock (_lock)
             {
                 InternalQueue.Enqueue(value);
-            }
-            finally
-            {
-                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
             }
         }
     }
