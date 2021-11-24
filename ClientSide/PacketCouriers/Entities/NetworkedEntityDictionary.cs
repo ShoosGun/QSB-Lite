@@ -58,7 +58,10 @@ namespace SNet_Client.PacketCouriers.Entities
             foreach (var entities in Values)
             {
                 foreach (var entity in entities)
-                    UnityEngine.Object.Destroy(entity.gameObject);
+                {
+                    if (entity != null)
+                        UnityEngine.Object.Destroy(entity.gameObject);
+                }
             }
             Clear();
         }
@@ -69,7 +72,10 @@ namespace SNet_Client.PacketCouriers.Entities
                 return;
 
             foreach (var entity in entities)
-                UnityEngine.Object.Destroy(entity.gameObject);
+            {
+                if (entity != null)
+                    UnityEngine.Object.Destroy(entity.gameObject);
+            }
 
             Remove(ownerID);
         }
