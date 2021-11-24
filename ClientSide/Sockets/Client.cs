@@ -1,5 +1,4 @@
 ﻿using System;
-
 using SNet_Client.Utils;
 
 
@@ -15,6 +14,7 @@ namespace SNet_Client.Sockets
         
         private SNETConcurrentQueue<byte[]> receivedData = new SNETConcurrentQueue<byte[]>();
         private const int MAX_PACKETS_TO_LOOK_EACH_LOOP = 30;
+        private const int MAX_WAITING_TIME_TO_READ_PACKET = 10;
 
         public PacketReceiver packetReceiver { get; private set; }
 
@@ -90,7 +90,7 @@ namespace SNet_Client.Sockets
                 }
 
                 int amountOfPacketDequeued = 0;
-                while (receivedData.TryDequeue(out byte[] packet) && amountOfPacketDequeued < MAX_PACKETS_TO_LOOK_EACH_LOOP)
+                while (receivedData.TryDequeue(out byte[] packet, MAX_WAITING_TIME_TO_READ_PACKET) && amountOfPacketDequeued < MAX_PACKETS_TO_LOOK_EACH_LOOP)
                 {
                     ReceiveData(packet);
                     amountOfPacketDequeued++;

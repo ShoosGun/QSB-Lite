@@ -68,7 +68,7 @@ namespace SNet_Server.Sockets
             Listening = true;
 
             //Loop de verificação de informações que dependem de tempo
-            Util.RepeatDelayedAction(DELTA_TIME_OF_VERIFICATION_LOOP, DELTA_TIME_OF_VERIFICATION_LOOP, () => TimedVerificationsLoop());
+            Util.RepeatDelayedAction(DELTA_TIME_OF_VERIFICATION_LOOP, DELTA_TIME_OF_VERIFICATION_LOOP, TimedVerificationsLoop);
 
             byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
             s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref AllowedClients, ReceiveCallback, nextDatagramBuffer);

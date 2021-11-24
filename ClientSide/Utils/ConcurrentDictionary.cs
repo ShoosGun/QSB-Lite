@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 
 namespace SNet_Client.Utils
 {
-    public class SNETConcurrentDictionary<TKey, TValue>
+    public class SNETConcurrentDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey,TValue>>
     {
         private Dictionary<TKey, TValue> InternalDict = new Dictionary<TKey, TValue>();
 
@@ -73,6 +74,22 @@ namespace SNet_Client.Utils
             lock (_lock)
             {
                 return InternalDict.TryGetValue(key, out value);
+            }
+        }
+
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            lock (_lock)
+            {
+                return InternalDict.GetEnumerator();
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            lock (_lock)
+            {
+                return InternalDict.GetEnumerator();
             }
         }
     }

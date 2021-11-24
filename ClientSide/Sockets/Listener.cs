@@ -14,7 +14,7 @@ namespace SNet_Client.Sockets
         private int maxWaitingTimeForTimeoutOfTheServer = 4000;
 
         private const int MAX_WAITING_TIME_FOR_VERIFICATION = 2000;
-        private const int MAX_WAITING_TIME_FOR_RELIABLE_PACKETS = 1000;
+        private const int DELTA_TIME_OF_VERIFICATION_LOOP = 1000;
 
         private SNETConcurrentDictionary<int, ReliablePacket> ReliablePackets;
 
@@ -115,6 +115,23 @@ namespace SNet_Client.Sockets
             }
         }
 
+        private bool TimedVerificationsLoop()
+        {
+            int deltaTime = (DateTime.UtcNow - server.GetTimeOfLastReceivedMessage()).Milliseconds;
+            
+            if (server.GetConnected())
+            {
+                //Se tiver esse delay então sabemos que deu timeout
+                if (deltaTime > maxWaitingTimeForTimeoutOfTheServer * 6)
+                    Disconnect();
+            }
+            //Enviar os pacotes reliable
+            foreach (var packet in ReliablePackets)
+                SendReliable(packet.Value);
+
+            return !server.GetConnected(); //Vai parar esse loop se estivermos desconectados do servidor
+        }
+
         //Cliente -> Servidor -> Cliente -> Servidor
         private void Connection(byte[] dgram)
         {
@@ -128,7 +145,8 @@ namespace SNet_Client.Sockets
                 server.SetConnected(true);
                 OnConnection?.Invoke();
 
-                Util.DelayedAction(maxWaitingTimeForTimeoutOfTheServer, () => CheckIfServerIsStillUp());
+                //Verificações com tempo de vida que ocorrem a cada
+                Util.RepeatDelayedAction(DELTA_TIME_OF_VERIFICATION_LOOP, DELTA_TIME_OF_VERIFICATION_LOOP, TimedVerificationsLoop);
             }
             //Enviar a confirmação que recebemos a conecção
             byte[] awnserBuffer = BitConverter.GetBytes((byte)PacketTypes.CONNECTION);
@@ -145,19 +163,6 @@ namespace SNet_Client.Sockets
 
             server.SetConnected(false);
             server.SetConnecting(false);
-        }
-
-        private void CheckIfServerIsStillUp()
-        {
-            if((DateTime.UtcNow - server.GetTimeOfLastReceivedMessage()).Milliseconds > maxWaitingTimeForTimeoutOfTheServer * 6)
-            {
-                //Disconnection por timedout
-                Disconnect();
-            }
-            else
-            {
-                Util.DelayedAction(maxWaitingTimeForTimeoutOfTheServer, () => CheckIfServerIsStillUp());
-            }
         }
 
         private void Receive(byte[] dgram)
@@ -184,7 +189,6 @@ namespace SNet_Client.Sockets
         private void ReceiveReliable_Receive(byte[] dgram)
         {
             int packeID = BitConverter.ToInt32(dgram, 1);
-
             ReliablePackets.Remove(packeID);
         }
 
@@ -220,25 +224,12 @@ namespace SNet_Client.Sockets
             if (server.GetConnected() && dgram.Length < DATAGRAM_MAX_SIZE)
             {
                 ReliablePacket reliablePacket = CreateReliablePacket(dgram);
-
                 ReliablePackets.Add(reliablePacket.PacketID, reliablePacket);
-                //Inicia o processo que a cada MAX_WAITING_TIME_FOR_RELIABLE_PACKETS vai vereficar se foi enviado e retransmitir
-                Util.RepeatDelayedAction(MAX_WAITING_TIME_FOR_RELIABLE_PACKETS, MAX_WAITING_TIME_FOR_RELIABLE_PACKETS
-                    , () => CheckReliableSentData(reliablePacket.PacketID));
 
                 SendReliable(reliablePacket);
                 return true;
             }
             return false;
-        }
-        private bool CheckReliableSentData(int packetID)
-        {
-            if (ReliablePackets.TryGetValue(packetID, out ReliablePacket packet))
-            {
-                SendReliable(packet);
-                return false; //Se tiver que receber não precisa pedir para parar
-            }
-            return true;//Se não existir mais pode parar
         }
 
         //Client -> Server -> Client
