@@ -19,7 +19,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
         public ReferenceFrames referenceFrame = ReferenceFrames.Sun;
         protected Transform referenceFrameTransform;
 
-        private void Awake()
+        protected virtual void Awake()
         {
             UniqueScriptIdentifingString = "TransformEntitySync";
             Serialize = true;
@@ -61,7 +61,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
             if (referenceFrameTransform == null)
                 return rotation;
 
-            return Quaternion.Inverse(referenceFrameTransform.rotation)* rotation;
+            return rotation * Quaternion.Inverse(referenceFrameTransform.rotation);
         }
         private Quaternion InverseRotationToReferenceFrame(Quaternion rotation)
         {

@@ -2,6 +2,7 @@
 using BepInEx;
 
 using SNet_Client.Sockets;
+using SNet_Client.Utils;
 
 using SNet_Client.PacketCouriers.Entities;
 using SNet_Client.PacketCouriers;
@@ -21,7 +22,7 @@ namespace SNet_Client
                 Application.runInBackground = true;
 
             _clientSide = new Client();
-
+            
             //Network Specific Scripts
             gameObject.AddComponent<ServerInteraction>();
             gameObject.AddComponent<EntityInitializer>();
@@ -31,8 +32,17 @@ namespace SNet_Client
             gameObject.AddComponent<ProbeEntities>();
 
         }
+        
+        private void Update()
+        {
+            //Atualizar quando achar que estiver em uma nova cena
+            if (Time.timeSinceLevelLoad < Time.deltaTime * 2f)
+            {
+                ReferenceFrameLocator.CacheAllReferenceFrame();
+            }
+        }
 
-        string IP = "127.0.0.1";
+                    string IP = "127.0.0.1";
         public void OnGUI()
         {
             if (!_clientSide.Connected)
