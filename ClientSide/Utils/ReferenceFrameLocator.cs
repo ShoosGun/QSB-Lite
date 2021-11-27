@@ -16,10 +16,12 @@ namespace SNet_Client.Utils
 
             if (referenceFrame == ReferenceFrames.GlobalRoot)
                 return false;
-
+            
             for (int i = 0; i < referenceFrameObjectData[referenceFrame].Length && !foundTheObject; i++)
             {
-                GameObject gameObject = GameObject.Find(referenceFrameObjectData[referenceFrame][i].ObjectSceneName);
+                ReferenceFrameFindingData findingData = referenceFrameObjectData[referenceFrame][i];
+
+                GameObject gameObject = GameObject.Find(findingData.ObjectSceneName);
                 if (gameObject != null)
                 {
                     referenceFrames[referenceFrame].ReferenceFrameTransform = gameObject.transform;
@@ -33,7 +35,7 @@ namespace SNet_Client.Utils
         }
         public static void CacheAllReferenceFrame()
         {
-            foreach(var pair in referenceFrameObjectData)
+            foreach (var pair in referenceFrameObjectData)
             {
                 if (pair.Key != ReferenceFrames.GlobalRoot && pair.Key != ReferenceFrames.AnyOWRigidbody)
                 {
@@ -43,9 +45,14 @@ namespace SNet_Client.Utils
                         GameObject gameObject = GameObject.Find(pair.Value[i].ObjectSceneName);
                         if (gameObject != null)
                         {
-                            referenceFrames[pair.Key].ReferenceFrameTransform = gameObject.transform;
-                            referenceFrames[pair.Key].MaxDistanceOfInfluence = pair.Value[i].MaxDistanceOfInfluence;
-                            referenceFrames[pair.Key].MinDistanceOfInfluence = pair.Value[i].MinDistanceOfInfluence;
+                            ReferenceFrameData data = new ReferenceFrameData
+                            {
+                                ReferenceFrameTransform = gameObject.transform,
+                                MaxDistanceOfInfluence = pair.Value[i].MaxDistanceOfInfluence,
+                                MinDistanceOfInfluence = pair.Value[i].MinDistanceOfInfluence
+                            };
+
+                            referenceFrames[pair.Key] = data;
 
                             foundTheObject = true;
                         }
@@ -82,10 +89,9 @@ namespace SNet_Client.Utils
 
                 return reference;
             }
-
             if (!referenceFrames.ContainsKey(referenceFrame))
-                referenceFrames.Add(referenceFrame, null);
-
+                referenceFrames.Add(referenceFrame, new ReferenceFrameData { ReferenceFrameTransform = null});
+        
             reference = referenceFrames[referenceFrame].ReferenceFrameTransform;
 
             if (reference == null)

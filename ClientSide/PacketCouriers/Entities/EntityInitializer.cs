@@ -130,8 +130,10 @@ namespace SNet_Client.PacketCouriers.Entities
         {
             int ownerID = reader.ReadInt32();
             int id = reader.ReadInt32();
+            
+            if (!InstantiadableGameObjectsPrefabHub.ownersDictionary.TryGetNetworkedEntity(ownerID, id, out NetworkedEntity networkedEntity))
+                return;
 
-            NetworkedEntity networkedEntity = InstantiadableGameObjectsPrefabHub.ownersDictionary.GetNetworkedEntity(ownerID, id);
             InstantiadableGameObjectsPrefabHub.ownersDictionary.RemoveEntity(networkedEntity);
 
             if(networkedEntity != null)

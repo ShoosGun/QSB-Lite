@@ -77,6 +77,7 @@
     <Compile Include="Utils\ConcurrentQueue.cs" />
     <Compile Include="Utils\ConcurrentDictionary.cs" />
     <Compile Include="Utils\ReferenceFrameLocator.cs" />
+    <Compile Include="Utils\ResourceLoader.cs" />
     <Compile Include="Utils\Util.cs" />
   </ItemGroup>
   <ItemGroup />

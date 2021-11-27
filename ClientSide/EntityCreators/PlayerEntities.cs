@@ -67,11 +67,12 @@ namespace SNet_Client.EntityCreators
 
         public NetworkedEntity CreatePlayerEntity(Vector3 position, Quaternion rotation, int ownerID, object[] InitializationData)
         {
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            GameObject go = new GameObject("player_networked_entity")
+            {
+                layer = LayerMask.NameToLayer("Primitive")
+            };
 
-            go.layer = LayerMask.NameToLayer("Primitive");
-
-            CapsuleCollider c = go.GetComponent<CapsuleCollider>();
+            CapsuleCollider c = go.AddComponent<CapsuleCollider>();
             c.radius = 0.5f;
             c.height = 2f;
             c.enabled = false;
@@ -82,6 +83,8 @@ namespace SNet_Client.EntityCreators
             rigidbody.angularDrag = 0f;
 
             OWRigidbody owrigid = go.AddComponent<OWRigidbody>();
+
+            bool createMesh = true;
 
             if (ownerID == ServerInteraction.GetOwnerID())
             {
@@ -105,6 +108,39 @@ namespace SNet_Client.EntityCreators
             RigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<RigidbodyEntitySync>();
             rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.Both;
             rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
+
+            if (createMesh)
+            {
+                Debug.Log("player");
+                //Mesh do player
+                GameObject mesh = new GameObject("mesh");
+                mesh.transform.parent = go.transform;
+                mesh.transform.localPosition = new Vector3(0f, -1f, 0f);
+                mesh.transform.localRotation = Quaternion.identity;
+                mesh.transform.localScale = Vector3.one;
+
+                if (ResourceLoader.GetVillagerMeshAndMaterial(out MeshMaterialCombo playerMeshAndMaterial))
+                {
+                    Debug.Log("Temos C");
+                    mesh.AddComponent<MeshFilter>().mesh = playerMeshAndMaterial.mesh;
+                    mesh.AddComponent<MeshRenderer>().material = playerMeshAndMaterial.material;
+                }
+
+                //Mesh da jetpack
+                GameObject jetpack = new GameObject("jetpack");
+                jetpack.transform.parent = mesh.transform;
+                jetpack.transform.localPosition = new Vector3(0f, 0.9f, -0.3f);
+                jetpack.transform.localRotation = Quaternion.Euler(0f, 75f, 0f);
+                jetpack.transform.localScale = Vector3.one;
+
+                if (ResourceLoader.GetJetpackMeshAndMaterial(out MeshMaterialCombo jetpackMeshAndMaterial))
+                {
+                    Debug.Log("Temos D");
+                    jetpack.AddComponent<MeshFilter>().mesh = jetpackMeshAndMaterial.mesh;
+                    jetpack.AddComponent<MeshRenderer>().material = jetpackMeshAndMaterial.material;
+                }
+                
+            }
 
             return networkedEntity;
         }

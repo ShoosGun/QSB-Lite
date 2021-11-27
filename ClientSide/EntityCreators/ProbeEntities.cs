@@ -48,16 +48,17 @@ namespace SNet_Client.EntityCreators
 
         public NetworkedEntity CreateProbeEntity(Vector3 position, Quaternion rotation, int ownerID, object[] InitializationData)
         {
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-
-            go.layer = LayerMask.NameToLayer("Primitive");
-
-            Collider c = go.GetComponent<Collider>();
-            c.enabled = false;
+            GameObject go = new GameObject("probe_networked_entity")
+            {
+                layer = LayerMask.NameToLayer("Primitive")
+            };
 
             Rigidbody rigidbody = go.AddComponent<Rigidbody>();
 
             go.AddComponent<OWRigidbody>();
+
+            bool createMesh = true;
+            bool createNormalMesh = false;
 
             if (ownerID == ServerInteraction.GetOwnerID())
             {
@@ -82,6 +83,38 @@ namespace SNet_Client.EntityCreators
             RigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<RigidbodyEntitySync>();
             rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.Both;
             rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
+
+
+            if (createMesh)
+            {
+                GameObject mesh = new GameObject("mesh");
+                mesh.transform.parent = go.transform;
+                mesh.transform.localPosition = new Vector3(0f, 0f, -0.2f);
+                mesh.transform.localRotation = Quaternion.identity;
+                if (createNormalMesh)
+                {
+                    //Mesh do probe
+                    mesh.transform.localScale = Vector3.one * 1.5f;
+                    if (ResourceLoader.GetProbeMeshAndMaterial(out MeshMaterialCombo probeMeshAndMaterial))
+                    {
+                        mesh.AddComponent<MeshFilter>().mesh = probeMeshAndMaterial.mesh;
+                        mesh.AddComponent<MeshRenderer>().material = probeMeshAndMaterial.material;
+                    }
+                }
+                else
+                { 
+                    //Mesh do angler
+                    mesh.transform.localScale = Vector3.one * 0.005f;
+
+                    if (ResourceLoader.GetAnglerfishMeshAndMaterial(out MeshMaterialCombo anglerMeshAndMaterial))
+                    {
+                        mesh.AddComponent<MeshFilter>().mesh = anglerMeshAndMaterial.mesh;
+                        mesh.AddComponent<MeshRenderer>().material = anglerMeshAndMaterial.material;
+                    }
+                }
+            }
+
+
 
             return networkedEntity;
         }
