@@ -103,11 +103,13 @@ namespace SNet_Client.EntityCreators
 
             TransformEntitySync transformEntitySync = networkedEntity.AddEntityScript<TransformEntitySync>();
             transformEntitySync.syncTransformType = SyncTransform.PositionAndRotationOnly;
-            transformEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
+            //transformEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
 
             RigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<RigidbodyEntitySync>();
             rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.Both;
-            rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
+            //rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
+
+            go.AddComponent<ClosestReferenceFrameLocator>();
 
             if (createMesh)
             {

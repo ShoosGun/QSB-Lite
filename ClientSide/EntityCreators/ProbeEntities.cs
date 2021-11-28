@@ -58,7 +58,7 @@ namespace SNet_Client.EntityCreators
             go.AddComponent<OWRigidbody>();
 
             bool createMesh = true;
-            bool createNormalMesh = false;
+            bool createNormalMesh = true;
 
             if (ownerID == ServerInteraction.GetOwnerID())
             {
@@ -76,13 +76,15 @@ namespace SNet_Client.EntityCreators
 
             NetworkedEntity networkedEntity = go.AddComponent<NetworkedEntity>();
 
-            TransformEntitySync transformEntitySync = networkedEntity.AddEntityScript<TransformEntitySync>();
+            DynamicReferenceTransformEntitySync transformEntitySync = networkedEntity.AddEntityScript<DynamicReferenceTransformEntitySync>();
             transformEntitySync.syncTransformType = SyncTransform.All;
-            transformEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
+            //transformEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
 
-            RigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<RigidbodyEntitySync>();
+            DynamicReferenceRigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<DynamicReferenceRigidbodyEntitySync>();
             rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.Both;
-            rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
+            //rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
+
+            go.AddComponent<ClosestReferenceFrameLocator>();
 
 
             if (createMesh)
@@ -113,8 +115,6 @@ namespace SNet_Client.EntityCreators
                     }
                 }
             }
-
-
 
             return networkedEntity;
         }
