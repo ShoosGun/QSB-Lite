@@ -16,7 +16,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
         public ReferenceFrames referenceFrame = ReferenceFrames.Sun;
         protected Rigidbody referenceFrameRigidbody;
 
-        private void Awake()
+        protected virtual void Awake()
         {
             UniqueScriptIdentifingString = "RigidbodyEntitySync";
             Serialize = true;

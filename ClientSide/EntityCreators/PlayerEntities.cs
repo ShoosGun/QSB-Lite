@@ -111,9 +111,10 @@ namespace SNet_Client.EntityCreators
 
             if (createMesh)
             {
+		//Copiar o objeto "Villager_Base" para podermos ter IK e outras coisas para animar 
                 Debug.Log("player");
                 //Mesh do player
-                GameObject mesh = new GameObject("mesh");
+                GameObject mesh = new GameObject("player_mesh");
                 mesh.transform.parent = go.transform;
                 mesh.transform.localPosition = new Vector3(0f, -1f, 0f);
                 mesh.transform.localRotation = Quaternion.identity;
@@ -121,21 +122,19 @@ namespace SNet_Client.EntityCreators
 
                 if (ResourceLoader.GetVillagerMeshAndMaterial(out MeshMaterialCombo playerMeshAndMaterial))
                 {
-                    Debug.Log("Temos C");
                     mesh.AddComponent<MeshFilter>().mesh = playerMeshAndMaterial.mesh;
                     mesh.AddComponent<MeshRenderer>().material = playerMeshAndMaterial.material;
                 }
 
                 //Mesh da jetpack
-                GameObject jetpack = new GameObject("jetpack");
-                jetpack.transform.parent = mesh.transform;
-                jetpack.transform.localPosition = new Vector3(0f, 0.9f, -0.3f);
-                jetpack.transform.localRotation = Quaternion.Euler(0f, 75f, 0f);
-                jetpack.transform.localScale = Vector3.one;
+                GameObject jetpack = new GameObject("jetpack_mesh");
+                jetpack.transform.parent = go.transform;
+                jetpack.transform.localPosition = new Vector3(0f, 0.4f, -0.3f);
+                jetpack.transform.localRotation = Quaternion.identity;
+                jetpack.transform.localScale = Vector3.one * 0.7731431f;
 
                 if (ResourceLoader.GetJetpackMeshAndMaterial(out MeshMaterialCombo jetpackMeshAndMaterial))
                 {
-                    Debug.Log("Temos D");
                     jetpack.AddComponent<MeshFilter>().mesh = jetpackMeshAndMaterial.mesh;
                     jetpack.AddComponent<MeshRenderer>().material = jetpackMeshAndMaterial.material;
                 }

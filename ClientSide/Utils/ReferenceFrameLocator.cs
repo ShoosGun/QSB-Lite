@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -25,8 +26,7 @@ namespace SNet_Client.Utils
                 if (gameObject != null)
                 {
                     referenceFrames[referenceFrame].ReferenceFrameTransform = gameObject.transform;
-                    referenceFrames[referenceFrame].MaxDistanceOfInfluence = referenceFrameObjectData[referenceFrame][i].MaxDistanceOfInfluence;
-                    referenceFrames[referenceFrame].MinDistanceOfInfluence = referenceFrameObjectData[referenceFrame][i].MinDistanceOfInfluence;
+                    referenceFrames[referenceFrame].RadiusOfInfluence = referenceFrameObjectData[referenceFrame][i].RadiusOfInfluence;
                     cachedTransform = gameObject.transform;
                     foundTheObject = true;
                 }
@@ -48,8 +48,7 @@ namespace SNet_Client.Utils
                             ReferenceFrameData data = new ReferenceFrameData
                             {
                                 ReferenceFrameTransform = gameObject.transform,
-                                MaxDistanceOfInfluence = pair.Value[i].MaxDistanceOfInfluence,
-                                MinDistanceOfInfluence = pair.Value[i].MinDistanceOfInfluence
+                                RadiusOfInfluence = pair.Value[i].RadiusOfInfluence,
                             };
 
                             referenceFrames[pair.Key] = data;
@@ -60,14 +59,16 @@ namespace SNet_Client.Utils
                 }
             }
         }
-        public static IEnumerator GetEnumerator()
+        public static void ForEach(Action<KeyValuePair<ReferenceFrames, ReferenceFrameData>> action)
         {
-            return referenceFrames.GetEnumerator();
+            foreach (var pair in referenceFrames)
+                action(pair);
         }
+
         private static bool GetAnyOWRigidbody(out Transform reference)
         {
             reference = null;
-            OWRigidbody rigidbody = (OWRigidbody)Object.FindObjectOfType(typeof(OWRigidbody));
+            OWRigidbody rigidbody = (OWRigidbody)GameObject.FindObjectOfType(typeof(OWRigidbody));
 
             if (rigidbody == null)
                 return false;
@@ -108,55 +109,58 @@ namespace SNet_Client.Utils
             }
             return reference;
         }
-
-        //TODO colocar os dados aki
+        
         private static readonly Dictionary<ReferenceFrames, ReferenceFrameFindingData[]> referenceFrameObjectData = new Dictionary<ReferenceFrames, ReferenceFrameFindingData[]>()
         {
-            {ReferenceFrames.Player, new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "Player_Body", MaxDistanceOfInfluence = 10f, MinDistanceOfInfluence = 1f, } } },
+            //{ReferenceFrames.Player, new ReferenceFrameFindingData[]{
+            //new ReferenceFrameFindingData(){ ObjectSceneName= "Player_Body", RadiusOfInfluence = 75f} } },
 
             {ReferenceFrames.Sun, new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "Sun_Body", MaxDistanceOfInfluence = 10f, MinDistanceOfInfluence = 1f, } } },
+            new ReferenceFrameFindingData(){ ObjectSceneName= "Sun_Body", RadiusOfInfluence = 4000f} } },
 
 
-            {ReferenceFrames.Hourglass_Twins,  new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName = "FocalBody" } } },
+	        {ReferenceFrames.Ash_Twin,  new ReferenceFrameFindingData[]{
+            new ReferenceFrameFindingData(){ ObjectSceneName = "Twin02_Body", RadiusOfInfluence = 350f} } },
+
+	        {ReferenceFrames.Ember_Twin,  new ReferenceFrameFindingData[]{
+            new ReferenceFrameFindingData(){ ObjectSceneName = "Twin01_Body", RadiusOfInfluence = 350f} } },
+
 
 
             {ReferenceFrames.Timber_Hearth, new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "TimberHearth_Body" } } },
+            new ReferenceFrameFindingData(){ ObjectSceneName= "TimberHearth_Body", RadiusOfInfluence = 400f} } },
 
             {ReferenceFrames.Attlerock, new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "Moon_Body" } } },
+            new ReferenceFrameFindingData(){ ObjectSceneName= "Moon_Body", RadiusOfInfluence = 200f} } },
 
 
             {ReferenceFrames.Brittle_Hollow, new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "BrittleHollow_Body" } } },
+            new ReferenceFrameFindingData(){ ObjectSceneName= "BrittleHollow_Body", RadiusOfInfluence = 750f} } },
 
             {ReferenceFrames.Hollows_Lantern, new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "VolcanicMoon_Body" } } },
+            new ReferenceFrameFindingData(){ ObjectSceneName= "VolcanicMoon_Body", RadiusOfInfluence = 300f} } },
 
             {ReferenceFrames.White_Hole, new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "WhiteHole_Body" } } },
+            new ReferenceFrameFindingData(){ ObjectSceneName= "WhiteHole_Body", RadiusOfInfluence = 750f} } },
 
 
             {ReferenceFrames.Giants_Deep,new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "GiantsDeep_Body" } } },
+            new ReferenceFrameFindingData(){ ObjectSceneName= "GiantsDeep_Body", RadiusOfInfluence = 2250f} } },
 
             {ReferenceFrames.Quantum_Moon, new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "QuantumMoon_Body" } } },
+            new ReferenceFrameFindingData(){ ObjectSceneName= "QuantumMoon_Body", RadiusOfInfluence = 350f} } },
 
             {ReferenceFrames.Interloper, new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "Comet_Body" } } },
+            new ReferenceFrameFindingData(){ ObjectSceneName= "Comet_Body", RadiusOfInfluence = 300f} } },
 
             {ReferenceFrames.Dark_Bramble, new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "DarkBramble_Body" } } },
+            new ReferenceFrameFindingData(){ ObjectSceneName= "DarkBramble_Body", RadiusOfInfluence = 3000f} } },
 
             {ReferenceFrames.Dark_Bramble_Nodes, new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "DarkBramble_Body" } } },
+            new ReferenceFrameFindingData(){ ObjectSceneName= "DarkBramble_Body", RadiusOfInfluence = 3000f} } },
 
             {ReferenceFrames.Derelict_Node, new ReferenceFrameFindingData[]{
-            new ReferenceFrameFindingData(){ ObjectSceneName= "DerelictDimension_Body" } } },
+            new ReferenceFrameFindingData(){ ObjectSceneName= "DerelictDimension_Body", RadiusOfInfluence = 600f} } },
 
             {ReferenceFrames.Stranger, new ReferenceFrameFindingData[]{ } },
             {ReferenceFrames.Dream_World, new ReferenceFrameFindingData[]{ } },
@@ -166,22 +170,21 @@ namespace SNet_Client.Utils
     public struct ReferenceFrameFindingData
     {
         public string ObjectSceneName;
-        public float MinDistanceOfInfluence;
-        public float MaxDistanceOfInfluence;
+        public float RadiusOfInfluence;
     }
 
     public class ReferenceFrameData
     {
         public Transform ReferenceFrameTransform;
-        public float MinDistanceOfInfluence;
-        public float MaxDistanceOfInfluence;
+        public float RadiusOfInfluence;
     }
 
     public enum ReferenceFrames : byte
     {
         Player,
         Sun,
-        Hourglass_Twins,
+	    Ash_Twin,
+	    Ember_Twin,
         Timber_Hearth,
         Attlerock,
         Brittle_Hollow,

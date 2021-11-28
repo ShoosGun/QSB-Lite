@@ -1,32 +1,33 @@
 ﻿using UnityEngine;
 
 using SNet_Client.Utils;
-using System.Collections.Generic;
 using SNet_Client.Sockets;
 
 namespace SNet_Client.EntityScripts.TransfromSync
 {
-    public class DynamicReferenceTransformEntitySync : TransformEntitySync
+    public class DynamicReferenceRigidbodyEntitySync : RigidbodyEntitySync
     {
         protected override void Awake()
         {
             base.Awake();
-            UniqueScriptIdentifingString = "DynamicReferenceTransformEntitySync";
+            UniqueScriptIdentifingString = "DynamicReferenceRigidbodyEntitySync";
         }
 
         public void ChangeReferenceFrame(ReferenceFrames referenceFrame, Transform referenceFrameTransform)
         {
             this.referenceFrame = referenceFrame;
-            this.referenceFrameTransform = referenceFrameTransform;
+            referenceFrameRigidbody = referenceFrameTransform.GetComponent<Rigidbody>();
         }
 
         public override void OnDeserialize(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
             ReferenceFrames newReferenceFrame = (ReferenceFrames)reader.ReadByte();
-            if (newReferenceFrame != referenceFrame)
+            if(newReferenceFrame != referenceFrame)
             {
                 referenceFrame = newReferenceFrame;
-                referenceFrameTransform = ReferenceFrameLocator.GetReferenceFrame(referenceFrame);
+                Transform t = ReferenceFrameLocator.GetReferenceFrame(referenceFrame);
+                if (t != null)
+                    referenceFrameRigidbody = t.GetComponent<Rigidbody>();
             }
 
             base.OnDeserialize(ref reader, receivedPacketData);

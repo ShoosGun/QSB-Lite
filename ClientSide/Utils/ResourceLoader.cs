@@ -38,15 +38,18 @@ namespace SNet_Client.Utils
         }
         public static bool GetAnglerfishMeshAndMaterial(out MeshMaterialCombo materialAndMesh)
         {
-            //TODO reencontrar o nome desse
-			//AnglerFishContainer/AnglerFish/Anglerfish_Base/anglerfish_rig:AnglerFish
-			return GetGameObjectMeshAndMaterial("AnglerFishContainer/AnglerFish/Anglerfish_Base/anglerfish_rig:AnglerFish", out materialAndMesh, true);
+			//Anglerfish_Base/anglerfish_rig:AnglerFish
+			return GetGameObjectMeshAndMaterial("Anglerfish_Base/anglerfish_rig:AnglerFish", out materialAndMesh, true);
         }
         public static bool GetProbeMeshAndMaterial(out MeshMaterialCombo materialAndMesh)
         {
-            //TODO reencontrar o nome desse
-            //Satellite_Body/ProbeMesh
-            return GetGameObjectMeshAndMaterial("Satellite_Body/ProbeMesh", out materialAndMesh);
+            //Probe
+            return GetGameObjectMeshAndMaterial("Probe", out materialAndMesh);
+        }
+	public static bool GetTelescopeMeshAndMaterial(out MeshMaterialCombo materialAndMesh)
+        {
+            //Kidtelescope
+            return GetGameObjectMeshAndMaterial("Kidtelescope", out materialAndMesh);
         }
     }
 
