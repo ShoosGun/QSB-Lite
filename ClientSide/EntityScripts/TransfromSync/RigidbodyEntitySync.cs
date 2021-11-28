@@ -22,18 +22,25 @@ namespace SNet_Client.EntityScripts.TransfromSync
             UniqueScriptIdentifingString = "RigidbodyEntitySync";
             Serialize = true;
         }
+
+        bool isOurs = false;
         protected override void Start()
         {
             base.Start();
             Transform t = ReferenceFrameLocator.GetReferenceFrame(referenceFrame);
             if (t != null)
                 referenceFrameRigidbody = t.GetComponent<Rigidbody>();
+
+            isOurs = gameObject.GetAttachedNetworkedEntity().IsOurs();
         }
 
         protected virtual void FixedUpdate()
         {
-            rigidbody.velocity = RealVelocitySeenByReferenceFrame(latestVelocity);
-            rigidbody.angularVelocity = AngularVelocityToReferenceFrame(lastestAngularVelocity);
+            if (!isOurs)
+            {
+                rigidbody.velocity = RealVelocitySeenByReferenceFrame(latestVelocity);
+                rigidbody.angularVelocity = AngularVelocityToReferenceFrame(lastestAngularVelocity);
+            }
         }
 
         Vector3 latestVelocity;

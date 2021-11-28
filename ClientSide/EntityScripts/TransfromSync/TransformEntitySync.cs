@@ -25,17 +25,23 @@ namespace SNet_Client.EntityScripts.TransfromSync
             UniqueScriptIdentifingString = "TransformEntitySync";
             Serialize = true;
         }
+        bool isOurs = false;
         protected override void Start()
         {
             base.Start();
             referenceFrameTransform = ReferenceFrameLocator.GetReferenceFrame(referenceFrame);
+
+            isOurs = gameObject.GetAttachedNetworkedEntity().IsOurs();
             //Debug.Log(string.Format("Reference Type {0} e Sync Type {1}", syncTransformType, referenceFrame));
         }
 
         protected virtual void FixedUpdate()
         {
-            transform.position = WithReferenceFrame(latestPosition);
-            transform.rotation = RotationToReferenceFrame(lastestRotation);
+            if (!isOurs)
+            {
+                transform.position = WithReferenceFrame(latestPosition);
+                transform.rotation = RotationToReferenceFrame(lastestRotation);
+            }
         }
 
         Vector3 latestPosition;
