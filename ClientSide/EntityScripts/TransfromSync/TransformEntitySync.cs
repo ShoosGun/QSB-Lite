@@ -13,8 +13,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
         PositionAndRotationOnly,
         All
     }
-
-    //TODO fazer com que ele lembre da ultima posição e rotação caso nenhuma nova venha
+    
     public class TransformEntitySync : EntityScriptBehaviour
     {
         public SyncTransform syncTransformType = SyncTransform.PositionAndRotationOnly;
@@ -33,12 +32,20 @@ namespace SNet_Client.EntityScripts.TransfromSync
             //Debug.Log(string.Format("Reference Type {0} e Sync Type {1}", syncTransformType, referenceFrame));
         }
 
+        protected virtual void FixedUpdate()
+        {
+            transform.position = WithReferenceFrame(latestPosition);
+            transform.rotation = RotationToReferenceFrame(lastestRotation);
+        }
+
+        Vector3 latestPosition;
+        Quaternion lastestRotation;
         public override void OnDeserialize(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
             if (syncTransformType == SyncTransform.PositionOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
-                transform.position = WithReferenceFrame(reader.ReadVector3());
+                latestPosition = reader.ReadVector3();
             if (syncTransformType == SyncTransform.RotationOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
-                transform.rotation = RotationToReferenceFrame(reader.ReadQuaternion());
+                lastestRotation = reader.ReadQuaternion();
             if (syncTransformType == SyncTransform.ScaleOnly || syncTransformType == SyncTransform.All)
                 transform.localScale = reader.ReadVector3();
         }
