@@ -10,7 +10,9 @@ namespace SNet_Client.EntityScripts.TransfromSync
         AngularMomentumOnly,
         Both
     }
-    public class RigidbodyEntitySync : EntityScriptBehaviour //Usar o segundo byte do primeiro das informacoes para suas informações de inicialização
+
+    //TODO fazer com que ele lembre da ultima velocidade caso nenhuma nova venha
+    public class RigidbodyEntitySync : EntityScriptBehaviour 
     {
         public SyncRigidbody syncRigidbodyType;
         public ReferenceFrames referenceFrame = ReferenceFrames.Sun;

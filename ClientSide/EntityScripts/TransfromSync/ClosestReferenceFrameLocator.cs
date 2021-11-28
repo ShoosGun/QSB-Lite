@@ -52,8 +52,8 @@ namespace SNet_Client.EntityScripts.TransfromSync
                 if (dynamicReferenceTransformEntitySync != null)
                     dynamicReferenceTransformEntitySync.ChangeReferenceFrame(referenceFrame, referenceFrameTransform);
 
-                if (dynamicReferenceTransformEntitySync != null)
-                    dynamicReferenceTransformEntitySync.ChangeReferenceFrame(referenceFrame, referenceFrameTransform);
+                if (dynamicReferenceRigidbodyEntitySync != null)
+                    dynamicReferenceRigidbodyEntitySync.ChangeReferenceFrame(referenceFrame, referenceFrameTransform);
 
                 Debug.Log(string.Format("Best reference frame is {0}", referenceFrame));
 

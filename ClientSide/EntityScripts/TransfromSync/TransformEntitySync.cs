@@ -13,6 +13,8 @@ namespace SNet_Client.EntityScripts.TransfromSync
         PositionAndRotationOnly,
         All
     }
+
+    //TODO fazer com que ele lembre da ultima posição e rotação caso nenhuma nova venha
     public class TransformEntitySync : EntityScriptBehaviour
     {
         public SyncTransform syncTransformType = SyncTransform.PositionAndRotationOnly;

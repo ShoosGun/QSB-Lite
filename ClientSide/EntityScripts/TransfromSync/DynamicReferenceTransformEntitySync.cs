@@ -25,6 +25,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
             ReferenceFrames newReferenceFrame = (ReferenceFrames)reader.ReadByte();
             if (newReferenceFrame != referenceFrame)
             {
+                Debug.Log(newReferenceFrame);
                 referenceFrame = newReferenceFrame;
                 referenceFrameTransform = ReferenceFrameLocator.GetReferenceFrame(referenceFrame);
             }

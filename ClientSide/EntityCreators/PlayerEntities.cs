@@ -92,6 +92,8 @@ namespace SNet_Client.EntityCreators
                 go.transform.localPosition = Vector3.zero;
                 go.transform.localRotation = Quaternion.identity;
                 rigidbody.isKinematic = true;
+                
+                go.AddComponent<ClosestReferenceFrameLocator>();
             }
             else
             {
@@ -101,15 +103,14 @@ namespace SNet_Client.EntityCreators
 
             NetworkedEntity networkedEntity = go.AddComponent<NetworkedEntity>();
 
-            TransformEntitySync transformEntitySync = networkedEntity.AddEntityScript<TransformEntitySync>();
+            DynamicReferenceTransformEntitySync transformEntitySync = networkedEntity.AddEntityScript<DynamicReferenceTransformEntitySync>();
             transformEntitySync.syncTransformType = SyncTransform.PositionAndRotationOnly;
-            //transformEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
+            transformEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
 
-            RigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<RigidbodyEntitySync>();
+            DynamicReferenceRigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<DynamicReferenceRigidbodyEntitySync>();
             rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.Both;
-            //rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
+            rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
 
-            go.AddComponent<ClosestReferenceFrameLocator>();
 
             if (createMesh)
             {
