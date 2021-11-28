@@ -54,6 +54,8 @@
     <Compile Include="EntityCreators\PlayerEntities.cs" />
     <Compile Include="EntityCreators\ProbeEntities.cs" />
     <Compile Include="EntityScripts\EntityScriptBehaviour.cs" />
+    <Compile Include="EntityScripts\TransfromSync\ClosestReferenceFrameLocator.cs" />
+    <Compile Include="EntityScripts\TransfromSync\DynamicReferenceRigidbodyEntitySync.cs" />
     <Compile Include="EntityScripts\TransfromSync\DynamicReferenceTransformEntitySync.cs" />
     <Compile Include="PacketCouriers\Entities\ClientOwnerIdsGenerator.cs" />
     <Compile Include="PacketCouriers\Entities\NetworkedEntityDictionary.cs" />

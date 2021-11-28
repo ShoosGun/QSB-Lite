@@ -26,7 +26,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
             Vector3 pos = transform.position;
             ReferenceFrames referenceFrame = ReferenceFrames.Sun;
 
-            float smallestDistanceSqr = 0f;
+            float smallestDistanceSqr = float.MaxValue;
 
             ReferenceFrameLocator.ForEach(CalculateClosestDistance);
             void CalculateClosestDistance(KeyValuePair<ReferenceFrames, ReferenceFrameData> pair)

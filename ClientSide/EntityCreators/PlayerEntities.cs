@@ -113,7 +113,7 @@ namespace SNet_Client.EntityCreators
 
             if (createMesh)
             {
-		//Copiar o objeto "Villager_Base" para podermos ter IK e outras coisas para animar 
+                //Copiar o objeto "Villager_Base" para podermos ter IK e outras coisas para animar 
                 Debug.Log("player");
                 //Mesh do player
                 GameObject mesh = new GameObject("player_mesh");
@@ -140,7 +140,7 @@ namespace SNet_Client.EntityCreators
                     jetpack.AddComponent<MeshFilter>().mesh = jetpackMeshAndMaterial.mesh;
                     jetpack.AddComponent<MeshRenderer>().material = jetpackMeshAndMaterial.material;
                 }
-                
+
             }
 
             return networkedEntity;
