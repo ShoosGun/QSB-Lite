@@ -109,7 +109,7 @@ namespace SNet_Client.Utils
             }
             return reference;
         }
-        
+        //TODO Adicionar aqui as ilhas em GD (por elas não serem previsiveis)
         private static readonly Dictionary<ReferenceFrames, ReferenceFrameFindingData[]> referenceFrameObjectData = new Dictionary<ReferenceFrames, ReferenceFrameFindingData[]>()
         {
             //{ReferenceFrames.Player, new ReferenceFrameFindingData[]{
