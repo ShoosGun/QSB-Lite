@@ -43,6 +43,9 @@ namespace SNet_Client.EntityScripts
         public virtual void OnDeserialize(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
         }
+        public virtual void OnReceiveMessage(byte[] messageData, ReceivedPacketData receivedPacketData)
+        {
+        }
         protected virtual void OnDestroy()
         {
             if (networkedEntity != null)

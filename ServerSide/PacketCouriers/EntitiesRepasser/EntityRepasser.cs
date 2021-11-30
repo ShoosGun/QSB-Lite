@@ -80,7 +80,24 @@ namespace SNet_Server.PacketCouriers
                 }
             }
         }
+        public void TransmitEntityMessage(ref PacketReader reader)
+        {
+            int ownerID = reader.ReadInt32();
+            int entityID = reader.ReadInt32();
+            int scriptID = reader.ReadInt32();
+            byte[] messageData = reader.ReadByteArray();
 
+            PacketWriter writer = new PacketWriter();
+            writer.Write((byte)EntityInitializerHeaders.EntityMessage);
+            writer.Write(ownerID);
+            writer.Write(entityID);
+            writer.Write(scriptID);
+            writer.WriteAsArray(messageData);
+
+            server.SendAll(writer.GetBytes(), HeaderValue);
+        }
+
+        //TODO adicionar a parte do servidor de receber mensagem de entidades (ele não vai gravar essas mensagens)
         public void ReadPacket(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
             switch ((EntityInitializerHeaders)reader.ReadByte())
@@ -93,6 +110,9 @@ namespace SNet_Server.PacketCouriers
                     break;
                 case EntityInitializerHeaders.EntitySerialization:
                     TransmitEntityScriptsOnDeserialization(ref reader, receivedPacketData);
+                    break;
+                case EntityInitializerHeaders.EntityMessage:
+                    TransmitEntityMessage(ref reader);
                     break;
                 case EntityInitializerHeaders.RefreshInstantiatedEntities:
                     Console.WriteLine("{0} requesitou refresh de entidades", receivedPacketData.ClientID);
@@ -133,6 +153,7 @@ namespace SNet_Server.PacketCouriers
             Instantiate,
             Remove,
             EntitySerialization,
+            EntityMessage,
             RefreshInstantiatedEntities
         }
         public enum InstantiateType : byte

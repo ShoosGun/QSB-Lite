@@ -204,6 +204,33 @@ namespace SNet_Client.PacketCouriers.Entities
                     entity.OnDeserializeEntity(data, receivedPacketData);
             }
         }
+        public void ReadEntityMessage(ref PacketReader reader, ReceivedPacketData receivedPacketData)
+        {
+            int ownerID = reader.ReadInt32();
+            int entityId = reader.ReadInt32();
+            int scriptID = reader.ReadInt32();
+            byte[] messageData = reader.ReadByteArray();
+
+            if (InstantiadableGameObjectsPrefabHub.ownersDictionary.TryGetNetworkedEntity(ownerID, entityId, out NetworkedEntity entity))
+                entity.OnReceiveMessage(messageData, scriptID, receivedPacketData);
+        }
+        public void SendEntityMessage(NetworkedEntity entity, int scriptID, byte[] messageData)
+        {
+            if (entity == null)
+                throw new OperationCanceledException("The entity used is null");
+
+            if (!entity.ComponentsToIO.ContainsKey(scriptID))
+                throw new OperationCanceledException(string.Format("The script with ID {0} doesn't exist in this entity", scriptID));
+
+            PacketWriter writer = new PacketWriter();
+            writer.Write((byte)EntityInitializerHeaders.EntityMessage);
+            writer.Write(entity.ownerId);
+            writer.Write(entity.id);
+            writer.Write(scriptID);
+            writer.WriteAsArray(messageData);
+
+            Client.GetClient().Send(writer.GetBytes(), HeaderValue);
+        }
         public void RequestRefreshOfEntities()
         {
             InstantiadableGameObjectsPrefabHub.DisconnectionReset();
@@ -226,6 +253,9 @@ namespace SNet_Client.PacketCouriers.Entities
                     ReadEntityScriptsOnDeserialization(ref reader, receivedPacketData);
                     //Debug.Log("Update de Entidades");
                     break;
+                case EntityInitializerHeaders.EntityMessage:
+                    ReadEntityMessage(ref reader, receivedPacketData);
+                    break;
             }
         }
 
@@ -239,6 +269,7 @@ namespace SNet_Client.PacketCouriers.Entities
             Instantiate,
             Remove,
             EntitySerialization,
+            EntityMessage,
             RefreshInstantiatedEntities
         }
 

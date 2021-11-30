@@ -43,15 +43,21 @@ namespace SNet_Client.PacketCouriers.Entities
             if (!ComponentsToIO.Remove(script.GetScriptID()))
                 Debug.LogWarning(string.Format("The script {0}({1}) isn't being synced in {1}", script.GetType(), script.GetScriptID(), transform.name), this);
         }
-
-        //TODO Adicionar um sistema de mensagens
-        public void SendMessage(EntityScriptBehaviour receiverEquivalent)
+        
+        public void SendMessage(EntityScriptBehaviour receiverEquivalent, byte[] message)
         {
-            //Manda uma mensagem para as outras versões dessa entidade, e o receptor será o de id igual a receiverEquivalent
+            EntityInitializer.client_EntityInitializer.SendEntityMessage(this, receiverEquivalent.GetScriptID(), message);
         }
-        public void OnReceiveMessage(byte[] data, ReceivedPacketData receivedPacketData)
+        public void OnReceiveMessage(byte[] messageData, int scriptID, ReceivedPacketData receivedPacketData)
         {
-            //Recebe uma mensagem de as outras versões dessa entidade, e é entregado ao de id igual ao valor
+            if (ComponentsToIO.TryGetValue(scriptID, out var script))
+            {
+                script.OnReceiveMessage(messageData, receivedPacketData);
+            }
+            else
+            {
+                Debug.LogError(string.Format("The script with id {0} couldn't be found for this message", scriptID));
+            }
         }
 
         public void OnSerializeEntity(ref PacketWriter writer)
