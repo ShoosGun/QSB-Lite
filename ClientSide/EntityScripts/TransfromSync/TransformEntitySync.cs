@@ -1,6 +1,5 @@
 ﻿using SNet_Client.Sockets;
 using SNet_Client.Utils;
-using System.Collections;
 using UnityEngine;
 
 namespace SNet_Client.EntityScripts.TransfromSync

@@ -38,10 +38,20 @@ namespace SNet_Client.PacketCouriers.Entities
             if (gameObject.GetComponent<T>() == script)
                 ComponentsToIO.Add(script.GetScriptID(), script);
         }
-        public void RemoveEntityScript<T>(T script) where T : EntityScriptBehaviour
+        public void RemoveEntityScript(EntityScriptBehaviour script)
         {
             if (!ComponentsToIO.Remove(script.GetScriptID()))
                 Debug.LogWarning(string.Format("The script {0}({1}) isn't being synced in {1}", script.GetType(), script.GetScriptID(), transform.name), this);
+        }
+
+        //TODO Adicionar um sistema de mensagens
+        public void SendMessage(EntityScriptBehaviour receiverEquivalent)
+        {
+            //Manda uma mensagem para as outras versões dessa entidade, e o receptor será o de id igual a receiverEquivalent
+        }
+        public void OnReceiveMessage(byte[] data, ReceivedPacketData receivedPacketData)
+        {
+            //Recebe uma mensagem de as outras versões dessa entidade, e é entregado ao de id igual ao valor
         }
 
         public void OnSerializeEntity(ref PacketWriter writer)

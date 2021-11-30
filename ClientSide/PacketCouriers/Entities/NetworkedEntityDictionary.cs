@@ -34,7 +34,11 @@ namespace SNet_Client.PacketCouriers.Entities
         }
         public bool TryGetNetworkedEntity(int ownerID, int id, out NetworkedEntity entity)
         {
-            return this[ownerID].TryGetValue(id, out entity);
+            if(TryGetValue(ownerID, out NetworkedEntityDictionary dict))
+                return dict.TryGetValue(id, out entity);
+
+            entity = null;
+            return false;
         }
 
         public bool ContainsEntity(NetworkedEntity networkedEntity)

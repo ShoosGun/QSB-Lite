@@ -31,6 +31,9 @@ namespace SNet_Client.EntityScripts.TransfromSync
             ReferenceFrameLocator.ForEach(CalculateClosestDistance);
             void CalculateClosestDistance(KeyValuePair<ReferenceFrames, ReferenceFrameData> pair)
             {
+                if (pair.Value.ReferenceFrameTransform == null)
+                    return;
+
                 float distanceSqr = (pos - pair.Value.ReferenceFrameTransform.position).sqrMagnitude;
 
                 if (pair.Value.RadiusOfInfluence * pair.Value.RadiusOfInfluence >= distanceSqr && smallestDistanceSqr > distanceSqr)
@@ -55,7 +58,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
                 if (dynamicReferenceRigidbodyEntitySync != null)
                     dynamicReferenceRigidbodyEntitySync.ChangeReferenceFrame(referenceFrame, referenceFrameTransform);
 
-                Debug.Log(string.Format("Best reference frame is {0}", referenceFrame));
+                //Debug.Log(string.Format("Best reference frame is {0}", referenceFrame));
 
                 yield return new WaitForSeconds(DeltaTimeForEachCheck);
             }

@@ -7,7 +7,6 @@ using SNet_Client.Utils;
 
 namespace SNet_Client.Sockets
 {
-    //TODO fazer a mesma mudança feita no servidor em relação a verificação de coisas
     public class Listener
     {
         private Server server;
