@@ -53,6 +53,7 @@
     <Compile Include="ClientMod.cs" />
     <Compile Include="EntityCreators\PlayerEntities.cs" />
     <Compile Include="EntityCreators\ProbeEntities.cs" />
+    <Compile Include="EntityScripts\StateSync\PlayerStatesSync.cs" />
     <Compile Include="EntityScripts\EntityScriptBehaviour.cs" />
     <Compile Include="EntityScripts\TransfromSync\ClosestReferenceFrameLocator.cs" />
     <Compile Include="EntityScripts\TransfromSync\DynamicReferenceRigidbodyEntitySync.cs" />
