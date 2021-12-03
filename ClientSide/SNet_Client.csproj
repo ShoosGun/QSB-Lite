@@ -51,9 +51,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClientMod.cs" />
-    <Compile Include="EntityCreators\PlayerEntities.cs" />
-    <Compile Include="EntityCreators\ProbeEntities.cs" />
-    <Compile Include="EntityScripts\StateSync\PlayerStatesSync.cs" />
+    <Compile Include="EntityCreators\Player\PlayerEntities.cs" />
+    <Compile Include="EntityCreators\Player\PlayerStates.cs" />
+    <Compile Include="EntityCreators\Probe\ProbeEntities.cs" />
+    <Compile Include="EntityCreators\Probe\ProbeStates.cs" />
+    <Compile Include="EntityScripts\StateSync\EntityStatesSync.cs" />
     <Compile Include="EntityScripts\EntityScriptBehaviour.cs" />
     <Compile Include="EntityScripts\TransfromSync\ClosestReferenceFrameLocator.cs" />
     <Compile Include="EntityScripts\TransfromSync\DynamicReferenceRigidbodyEntitySync.cs" />

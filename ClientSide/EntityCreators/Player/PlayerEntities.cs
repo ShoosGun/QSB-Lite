@@ -5,6 +5,7 @@ using SNet_Client.PacketCouriers;
 using SNet_Client.EntityScripts.TransfromSync;
 using SNet_Client.Utils;
 using SNet_Client.Sockets;
+using SNet_Client.EntityScripts.StateSync;
 
 namespace SNet_Client.EntityCreators
 {
@@ -110,7 +111,9 @@ namespace SNet_Client.EntityCreators
             DynamicReferenceRigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<DynamicReferenceRigidbodyEntitySync>();
             rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.Both;
             rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
-
+            
+            EntityStatesSync statesSync = networkedEntity.AddEntityScript<EntityStatesSync>();
+            //TODO adicionar todos os estados em PlayerSates em classes qe cuidem da animação e etc
 
             if (createMesh)
             {
