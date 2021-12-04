@@ -52,8 +52,10 @@
   <ItemGroup>
     <Compile Include="ClientMod.cs" />
     <Compile Include="EntityCreators\Player\PlayerEntities.cs" />
+    <Compile Include="EntityCreators\Player\PlayerItemStates.cs" />
     <Compile Include="EntityCreators\Player\PlayerStates.cs" />
     <Compile Include="EntityCreators\Probe\ProbeEntities.cs" />
+    <Compile Include="EntityCreators\Probe\ProbeLightsAndSound.cs" />
     <Compile Include="EntityCreators\Probe\ProbeStates.cs" />
     <Compile Include="EntityScripts\StateSync\EntityStatesSync.cs" />
     <Compile Include="EntityScripts\EntityScriptBehaviour.cs" />

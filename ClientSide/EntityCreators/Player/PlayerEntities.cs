@@ -7,7 +7,7 @@ using SNet_Client.Utils;
 using SNet_Client.Sockets;
 using SNet_Client.EntityScripts.StateSync;
 
-namespace SNet_Client.EntityCreators
+namespace SNet_Client.EntityCreators.Player
 {
     public class PlayerEntities : MonoBehaviour
     {
@@ -113,7 +113,10 @@ namespace SNet_Client.EntityCreators
             rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
             
             EntityStatesSync statesSync = networkedEntity.AddEntityScript<EntityStatesSync>();
+
             //TODO adicionar todos os estados em PlayerSates em classes qe cuidem da animação e etc
+            gameObject.AddComponent<PlayerItemStates>();
+            //TODO Deixar melhor separado cada elemento (mellow stick, suit, flashlight, ...)
 
             if (createMesh)
             {
