@@ -53,7 +53,9 @@
     <Compile Include="ClientMod.cs" />
     <Compile Include="EntityCreators\Player\PlayerEntities.cs" />
     <Compile Include="EntityCreators\Player\PlayerItemStates.cs" />
+    <Compile Include="EntityCreators\Player\PlayerLight.cs" />
     <Compile Include="EntityCreators\Player\PlayerStates.cs" />
+    <Compile Include="EntityCreators\Player\PlayerSuit.cs" />
     <Compile Include="EntityCreators\Probe\ProbeEntities.cs" />
     <Compile Include="EntityCreators\Probe\ProbeLightsAndSound.cs" />
     <Compile Include="EntityCreators\Probe\ProbeStates.cs" />

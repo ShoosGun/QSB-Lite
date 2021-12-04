@@ -8,31 +8,33 @@ namespace SNet_Client.EntityCreators.Player
 {
     public class PlayerItemStates : MonoBehaviour
     {
-        EntityStatesSync statesSync;
+        private EntityStatesSync statesSync;
 
-        GameObject Telescope;
+        public GameObject Telescope;
 
-        GameObject MellowStick;
+        public GameObject MellowStick;
 
-        GameObject Flashlight;
+        public GameObject Flashlight;
 
         //Suit Stuff
-        GameObject JetPack;
-        GameObject Helmet;
+        private PlayerSuit playerSuit;
 
         public void Start()
         {
             statesSync = GetComponent<EntityStatesSync>();
+            playerSuit = GetComponent<PlayerSuit>();
 
             bool isPlayerAlreadyWithSuit = false;
-            if (!gameObject.GetAttachedNetworkedEntity().IsOurs())
+            if (gameObject.GetAttachedNetworkedEntity().IsOurs())
             {
+                GlobalMessenger.AddListener("SuitUp", OnSuitUp);
+                GlobalMessenger.AddListener("RemoveSuit", OnRemoveSuit);
 
+                GlobalMessenger.AddListener("TurnOnFlashlight", OnFlashlightOn);
+                GlobalMessenger.AddListener("TurnOffFlashlight", OnFlashlightOff);
             }
             else
             {
-                //TODO Pegar se o player ja esta com a roupa e jogar aqui
-                isPlayerAlreadyWithSuit = Locator.GetPlayerTransform().GetComponent<Player>();
             }
 
             statesSync.AddStateListener((byte)PlayerStates.SUIT_EQUIP, isPlayerAlreadyWithSuit, OnSuitStateChange);
@@ -40,6 +42,16 @@ namespace SNet_Client.EntityCreators.Player
             statesSync.AddStateListener((byte)PlayerStates.ROASTING_MELLOWS, false, OnMellowsStateChange);
             statesSync.AddStateListener((byte)PlayerStates.USING_TELESCOPE, false, OnTelescopeStateChange);
         }
+        
+
+        public void OnDestroy()
+        {
+            GlobalMessenger.RemoveListener("SuitUp", OnSuitUp);
+            GlobalMessenger.RemoveListener("RemoveSuit", OnRemoveSuit);
+            GlobalMessenger.RemoveListener("TurnOnFlashlight", OnFlashlightOn);
+            GlobalMessenger.RemoveListener("TurnOffFlashlight", OnFlashlightOff);
+        }
+        
 
         private void OnTelescopeStateChange(bool isUsingTelescope)
         {
@@ -51,14 +63,21 @@ namespace SNet_Client.EntityCreators.Player
             //Fazer a animação do graveto aparecer para o outro player
         }
 
+        private void OnFlashlightOff() => statesSync.ChangeValue((byte)PlayerStates.FLASHLIGHT, false);
+
+        private void OnFlashlightOn() => statesSync.ChangeValue((byte)PlayerStates.FLASHLIGHT, true);
+
         private void OnFlashlightStateChange(bool isLightEnabled)
         {
             //Ligar a lanterna do outro player
         }
 
+        private void OnRemoveSuit() => statesSync.ChangeValue((byte)PlayerStates.SUIT_EQUIP, false);
+        private void OnSuitUp() => statesSync.ChangeValue((byte)PlayerStates.SUIT_EQUIP, true);
+
         private void OnSuitStateChange(bool isWithSuit)
         {
-            //Ativar a animação de colocar a roupa
+            playerSuit.EquipSuit(isWithSuit);
         }
     }
 }

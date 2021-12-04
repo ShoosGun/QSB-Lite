@@ -93,7 +93,7 @@ namespace SNet_Client.EntityCreators.Player
                 go.transform.localPosition = Vector3.zero;
                 go.transform.localRotation = Quaternion.identity;
                 rigidbody.isKinematic = true;
-                
+
                 go.AddComponent<ClosestReferenceFrameLocator>();
             }
             else
@@ -111,46 +111,39 @@ namespace SNet_Client.EntityCreators.Player
             DynamicReferenceRigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<DynamicReferenceRigidbodyEntitySync>();
             rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.Both;
             rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
-            
+
             EntityStatesSync statesSync = networkedEntity.AddEntityScript<EntityStatesSync>();
 
             //TODO adicionar todos os estados em PlayerSates em classes qe cuidem da animação e etc
-            gameObject.AddComponent<PlayerItemStates>();
+            PlayerItemStates itemStates = gameObject.AddComponent<PlayerItemStates>();
             //TODO Deixar melhor separado cada elemento (mellow stick, suit, flashlight, ...)
+
+            gameObject.AddComponent<PlayerSuit>();
 
             if (createMesh)
             {
                 //Copiar o objeto "Villager_Base" para podermos ter IK e outras coisas para animar 
                 Debug.Log("player");
                 //Mesh do player
-                GameObject mesh = new GameObject("player_mesh");
-                mesh.transform.parent = go.transform;
-                mesh.transform.localPosition = new Vector3(0f, -1f, 0f);
-                mesh.transform.localRotation = Quaternion.identity;
-                mesh.transform.localScale = Vector3.one;
-
-                if (ResourceLoader.GetVillagerMeshAndMaterial(out MeshMaterialCombo playerMeshAndMaterial))
-                {
-                    mesh.AddComponent<MeshFilter>().mesh = playerMeshAndMaterial.mesh;
-                    mesh.AddComponent<MeshRenderer>().material = playerMeshAndMaterial.material;
-                }
-
-                //Mesh da jetpack
-                GameObject jetpack = new GameObject("jetpack_mesh");
-                jetpack.transform.parent = go.transform;
-                jetpack.transform.localPosition = new Vector3(0f, 0.4f, -0.3f);
-                jetpack.transform.localRotation = Quaternion.identity;
-                jetpack.transform.localScale = Vector3.one * 0.7731431f;
-
-                if (ResourceLoader.GetJetpackMeshAndMaterial(out MeshMaterialCombo jetpackMeshAndMaterial))
-                {
-                    jetpack.AddComponent<MeshFilter>().mesh = jetpackMeshAndMaterial.mesh;
-                    jetpack.AddComponent<MeshRenderer>().material = jetpackMeshAndMaterial.material;
-                }
-
+                CreatePlayerMesh(go.transform);
             }
 
             return networkedEntity;
+        }
+
+        private GameObject CreatePlayerMesh(Transform playerT)
+        {
+            GameObject mesh = new GameObject("player_mesh");
+            mesh.transform.parent = playerT;
+            mesh.transform.localPosition = new Vector3(0f, -1f, 0f);
+            mesh.transform.localRotation = Quaternion.identity;
+            mesh.transform.localScale = Vector3.one;
+            if (ResourceLoader.GetVillagerMeshAndMaterial(out MeshMaterialCombo playerMeshAndMaterial))
+            {
+                mesh.AddComponent<MeshFilter>().mesh = playerMeshAndMaterial.mesh;
+                mesh.AddComponent<MeshRenderer>().material = playerMeshAndMaterial.material;
+            }
+            return mesh;
         }
     }
 }

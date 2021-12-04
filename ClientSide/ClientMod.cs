@@ -8,6 +8,7 @@ using SNet_Client.PacketCouriers.Entities;
 using SNet_Client.PacketCouriers;
 
 using SNet_Client.EntityCreators;
+using SNet_Client.EntityCreators.Player;
 
 namespace SNet_Client
 {
@@ -28,7 +29,7 @@ namespace SNet_Client
             gameObject.AddComponent<EntityInitializer>();
 
             //Game Specific Scripts
-            gameObject.AddComponent<PlayerEntities>(); //TODO Criar evento de pegar a roupa de estar sem a roupa especial
+            gameObject.AddComponent<PlayerEntities>();
             gameObject.AddComponent<ProbeEntities>();
 
             //TODO Adicionar Script para spawnar a nave usando os global events "EnterShipProximity" e "ExitShipProximity"
