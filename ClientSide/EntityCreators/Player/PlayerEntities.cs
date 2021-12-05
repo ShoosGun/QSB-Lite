@@ -55,6 +55,7 @@ namespace SNet_Client.EntityCreators.Player
         private void PlayerEntities_Disconnection()
         {
             weHavePlayerID = false;
+            hasSpawnedPlayer = false;
         }
 
         private void SpawnPlayer()
@@ -115,10 +116,14 @@ namespace SNet_Client.EntityCreators.Player
             EntityStatesSync statesSync = networkedEntity.AddEntityScript<EntityStatesSync>();
 
             //TODO adicionar todos os estados em PlayerSates em classes qe cuidem da animação e etc
-            PlayerItemStates itemStates = gameObject.AddComponent<PlayerItemStates>();
-            //TODO Deixar melhor separado cada elemento (mellow stick, suit, flashlight, ...)
+            go.AddComponent<PlayerItemStates>();
 
-            gameObject.AddComponent<PlayerSuit>();
+            //TODO Deixar melhor separado cada elemento (mellow stick, suit, flashlight, ...)
+            if (ownerID == ServerInteraction.GetOwnerID())
+            {
+                go.AddComponent<PlayerLight>();
+            }
+            go.AddComponent<PlayerSuit>();
 
             if (createMesh)
             {

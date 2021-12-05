@@ -2,7 +2,6 @@
 
 using SNet_Client.Utils;
 using SNet_Client.EntityScripts.StateSync;
-using System;
 
 namespace SNet_Client.EntityCreators.Player
 {
@@ -14,7 +13,7 @@ namespace SNet_Client.EntityCreators.Player
 
         public GameObject MellowStick;
 
-        public GameObject Flashlight;
+        private PlayerLight playerLight;
 
         //Suit Stuff
         private PlayerSuit playerSuit;
@@ -23,6 +22,7 @@ namespace SNet_Client.EntityCreators.Player
         {
             statesSync = GetComponent<EntityStatesSync>();
             playerSuit = GetComponent<PlayerSuit>();
+            playerLight = GetComponent<PlayerLight>();
 
             bool isPlayerAlreadyWithSuit = false;
             if (gameObject.GetAttachedNetworkedEntity().IsOurs())
@@ -32,9 +32,6 @@ namespace SNet_Client.EntityCreators.Player
 
                 GlobalMessenger.AddListener("TurnOnFlashlight", OnFlashlightOn);
                 GlobalMessenger.AddListener("TurnOffFlashlight", OnFlashlightOff);
-            }
-            else
-            {
             }
 
             statesSync.AddStateListener((byte)PlayerStates.SUIT_EQUIP, isPlayerAlreadyWithSuit, OnSuitStateChange);
@@ -69,7 +66,8 @@ namespace SNet_Client.EntityCreators.Player
 
         private void OnFlashlightStateChange(bool isLightEnabled)
         {
-            //Ligar a lanterna do outro player
+            if (playerLight != null)
+                playerLight.TurnLight(isLightEnabled);
         }
 
         private void OnRemoveSuit() => statesSync.ChangeValue((byte)PlayerStates.SUIT_EQUIP, false);
@@ -77,7 +75,8 @@ namespace SNet_Client.EntityCreators.Player
 
         private void OnSuitStateChange(bool isWithSuit)
         {
-            playerSuit.EquipSuit(isWithSuit);
+            if(playerSuit != null)
+                playerSuit.EquipSuit(isWithSuit);
         }
     }
 }
