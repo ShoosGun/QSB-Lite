@@ -100,12 +100,18 @@ namespace SNet_Client.EntityScripts.StateSync
             //Bool States
             writer.Write(EntityStates.Count);
             foreach (var pair in EntityStates)
+            {
+                writer.Write(pair.Key);
                 writer.Write(pair.Value.State);
+            }
 
             //Byte States
             writer.Write(ByteEntityStates.Count);
             foreach (var pair in ByteEntityStates)
+            {
+                writer.Write(pair.Key);
                 writer.Write(pair.Value.State);
+            }
         }
     }
 
