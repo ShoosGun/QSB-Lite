@@ -75,14 +75,14 @@ namespace SNet_Client.EntityScripts.TransfromSync
             if (referenceFrameTransform == null)
                 return rotation;
 
-            return rotation * Quaternion.Inverse(referenceFrameTransform.rotation);
+            return referenceFrameTransform.rotation * rotation;
         }
         private Quaternion InverseRotationToReferenceFrame(Quaternion rotation)
         {
             if (referenceFrameTransform == null)
                 return rotation;
 
-            return rotation * referenceFrameTransform.rotation;
+            return Quaternion.Inverse(referenceFrameTransform.rotation) * rotation;
         }
 
         public override void OnSerialize(ref PacketWriter writer)
