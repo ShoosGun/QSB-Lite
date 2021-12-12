@@ -147,6 +147,15 @@ namespace SNet_Client.Utils
             {ReferenceFrames.Giants_Deep,new ReferenceFrameFindingData[]{
             new ReferenceFrameFindingData(){ ObjectSceneName= "GiantsDeep_Body", RadiusOfInfluence = 2250f} } },
 
+            {ReferenceFrames.Giants_Deep_Island_Gabbro,new ReferenceFrameFindingData[]{
+            new ReferenceFrameFindingData(){ ObjectSceneName= "ZenIsland_Body", RadiusOfInfluence = 150f} } },
+            {ReferenceFrames.Giants_Deep_Island_Antenna,new ReferenceFrameFindingData[]{
+            new ReferenceFrameFindingData(){ ObjectSceneName= "TimeLoopIsland_Body", RadiusOfInfluence = 150f} } },
+            {ReferenceFrames.Giants_Deep_Island_Teleporter,new ReferenceFrameFindingData[]{
+            new ReferenceFrameFindingData(){ ObjectSceneName= "TeleportIsland", RadiusOfInfluence = 150f} } },
+            {ReferenceFrames.Giants_Deep_Island_Empty,new ReferenceFrameFindingData[]{
+            new ReferenceFrameFindingData(){ ObjectSceneName= "QuantumIsland_Body", RadiusOfInfluence = 150f} } },
+
             {ReferenceFrames.Quantum_Moon, new ReferenceFrameFindingData[]{
             new ReferenceFrameFindingData(){ ObjectSceneName= "QuantumMoon_Body", RadiusOfInfluence = 350f} } },
 
@@ -190,7 +199,13 @@ namespace SNet_Client.Utils
         Brittle_Hollow,
         Hollows_Lantern,
         White_Hole,
+
         Giants_Deep,
+        Giants_Deep_Island_Gabbro,
+        Giants_Deep_Island_Antenna,
+        Giants_Deep_Island_Teleporter,
+        Giants_Deep_Island_Empty,
+
         Quantum_Moon,
         Interloper,
 

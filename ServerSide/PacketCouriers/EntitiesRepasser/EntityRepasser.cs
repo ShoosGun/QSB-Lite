@@ -96,8 +96,7 @@ namespace SNet_Server.PacketCouriers
 
             server.SendAll(writer.GetBytes(), HeaderValue);
         }
-
-        //TODO adicionar a parte do servidor de receber mensagem de entidades (ele não vai gravar essas mensagens)
+        
         public void ReadPacket(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
             switch ((EntityInitializerHeaders)reader.ReadByte())

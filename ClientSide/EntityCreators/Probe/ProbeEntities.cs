@@ -91,7 +91,7 @@ namespace SNet_Client.EntityCreators
                 GameObject mesh = new GameObject("mesh");
                 mesh.transform.parent = go.transform;
                 mesh.transform.localPosition = new Vector3(0f, 0f, -0.2f);
-                mesh.transform.localRotation = Quaternion.identity;
+                mesh.transform.localRotation = Quaternion.Euler(-90f, 0, 0);
                 if (createNormalMesh)
                 {
                     //Mesh do probe

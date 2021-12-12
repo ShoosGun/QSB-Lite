@@ -114,8 +114,7 @@ namespace SNet_Client.EntityCreators.Player
             rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
 
             EntityStatesSync statesSync = networkedEntity.AddEntityScript<EntityStatesSync>();
-
-            //TODO adicionar todos os estados em PlayerSates em classes qe cuidem da animação e etc
+            
             go.AddComponent<PlayerItemStates>();
 
             //TODO Deixar melhor separado cada elemento (mellow stick, suit, flashlight, ...)
@@ -124,6 +123,7 @@ namespace SNet_Client.EntityCreators.Player
                 go.AddComponent<PlayerLight>();
             }
             go.AddComponent<PlayerSuit>();
+            go.AddComponent<PlayerTelescope>();
 
             if (createMesh)
             {

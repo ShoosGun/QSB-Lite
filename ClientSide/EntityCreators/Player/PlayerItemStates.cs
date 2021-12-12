@@ -2,6 +2,7 @@
 
 using SNet_Client.Utils;
 using SNet_Client.EntityScripts.StateSync;
+using System;
 
 namespace SNet_Client.EntityCreators.Player
 {
@@ -9,7 +10,7 @@ namespace SNet_Client.EntityCreators.Player
     {
         private EntityStatesSync statesSync;
 
-        public GameObject Telescope;
+        private PlayerTelescope telescope;
 
         public GameObject MellowStick;
 
@@ -23,6 +24,7 @@ namespace SNet_Client.EntityCreators.Player
             statesSync = GetComponent<EntityStatesSync>();
             playerSuit = GetComponent<PlayerSuit>();
             playerLight = GetComponent<PlayerLight>();
+            telescope = GetComponent<PlayerTelescope>();
 
             bool isPlayerAlreadyWithSuit = false;
             if (gameObject.GetAttachedNetworkedEntity().IsOurs())
@@ -32,6 +34,9 @@ namespace SNet_Client.EntityCreators.Player
 
                 GlobalMessenger.AddListener("TurnOnFlashlight", OnFlashlightOn);
                 GlobalMessenger.AddListener("TurnOffFlashlight", OnFlashlightOff);
+
+                GlobalMessenger<Telescope>.AddListener("EnterTelescopeView", OnEnterTelescopeView);
+                GlobalMessenger.AddListener("ExitTelescopeView", OnExitTelescopeView);
             }
 
             statesSync.AddStateListener((byte)PlayerStates.SUIT_EQUIP, isPlayerAlreadyWithSuit, OnSuitStateChange);
@@ -39,7 +44,6 @@ namespace SNet_Client.EntityCreators.Player
             statesSync.AddStateListener((byte)PlayerStates.ROASTING_MELLOWS, false, OnMellowsStateChange);
             statesSync.AddStateListener((byte)PlayerStates.USING_TELESCOPE, false, OnTelescopeStateChange);
         }
-        
 
         public void OnDestroy()
         {
@@ -47,12 +51,18 @@ namespace SNet_Client.EntityCreators.Player
             GlobalMessenger.RemoveListener("RemoveSuit", OnRemoveSuit);
             GlobalMessenger.RemoveListener("TurnOnFlashlight", OnFlashlightOn);
             GlobalMessenger.RemoveListener("TurnOffFlashlight", OnFlashlightOff);
+            GlobalMessenger<Telescope>.RemoveListener("EnterTelescopeView", OnEnterTelescopeView);
+            GlobalMessenger.RemoveListener("ExitTelescopeView", OnExitTelescopeView);
         }
-        
+
+        private void OnExitTelescopeView() => statesSync.ChangeValue((byte)PlayerStates.USING_TELESCOPE, false);
+
+        private void OnEnterTelescopeView(Telescope tele) => statesSync.ChangeValue((byte)PlayerStates.USING_TELESCOPE, true);
 
         private void OnTelescopeStateChange(bool isUsingTelescope)
         {
-            //Fazer o telescopio aparecer
+            if (telescope != null)
+                telescope.EquipTele(isUsingTelescope);
         }
 
         private void OnMellowsStateChange(bool isRoastingMellows)
