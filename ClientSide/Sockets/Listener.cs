@@ -116,7 +116,7 @@ namespace SNet_Client.Sockets
 
         private bool TimedVerificationsLoop()
         {
-            int deltaTime = (DateTime.UtcNow - server.GetTimeOfLastReceivedMessage()).Milliseconds;
+            int deltaTime = (int)(DateTime.UtcNow - server.GetTimeOfLastReceivedMessage()).TotalMilliseconds;
             
             if (server.GetConnected())
             {
@@ -128,7 +128,7 @@ namespace SNet_Client.Sockets
             foreach (var packet in ReliablePackets)
                 SendReliable(packet.Value);
 
-            return !server.GetConnected(); //Vai parar esse loop se estivermos desconectados do servidor
+            return server.GetConnected(); //Vai parar esse loop se estivermos desconectados do servidor
         }
 
         //Cliente -> Servidor -> Cliente -> Servidor

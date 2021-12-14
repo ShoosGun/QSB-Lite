@@ -44,7 +44,7 @@ namespace SNet_Server
             Util.RepeatDelayedAction(SERVER_TIME_STEP, SERVER_TIME_STEP, () =>
             {
                 server.CheckReceivedData();
-                lock (shouldServerBeOn_LOCK) { return !shouldServerBeOn; }
+                lock (shouldServerBeOn_LOCK) { return shouldServerBeOn; }
             });
 
             while (areWeSupposedToLoop)

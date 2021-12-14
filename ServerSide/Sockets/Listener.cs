@@ -138,8 +138,7 @@ namespace SNet_Server.Sockets
             //Fazer checagem se ele pode receber timeout
             foreach (var client in Clients)
             {
-                int timeDifference = (currentVerificationTime - client.Value.TimeOfLastPacket).Milliseconds;
-
+                int timeDifference = (int)(currentVerificationTime - client.Value.TimeOfLastPacket).TotalMilliseconds;
                 if (client.Value.IsConnected)
                 {
                     if (timeDifference > MAX_WAITING_TIME_FOR_TIMEOUT) //Dar timeout
@@ -181,7 +180,7 @@ namespace SNet_Server.Sockets
             for (int i = 0; i < packetsToRemove.Count; i++)
                 ReliablePackets.Remove(packetsToRemove[i].PacketID, out var p);
 
-            return !Listening; //Vai parar esse loop se listener estiver desativado
+            return Listening; //Vai parar esse loop se listener estiver desativado
         }
 
         //Cliente -> Servidor -> Cliente -> Servidor

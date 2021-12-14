@@ -122,7 +122,7 @@ namespace SNet_Client.Sockets
             {
                 int Header = packet.ReadInt32();
                 DateTime sendTime = packet.ReadDateTime();
-                ReceivedPacketData receivedPacketData = new ReceivedPacketData(sendTime, (DateTime.UtcNow - sendTime).Milliseconds);
+                ReceivedPacketData receivedPacketData = new ReceivedPacketData(sendTime, (int)(DateTime.UtcNow - sendTime).TotalMilliseconds);
 
                 packetReceiver.ReadReceivedPacket(ref packet, Header, receivedPacketData);
             }

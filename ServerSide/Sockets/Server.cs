@@ -65,7 +65,7 @@ namespace SNet_Server.Sockets
             {
                 int Header = packet.ReadInt32();
                 DateTime sendTime = packet.ReadDateTime();
-                ReceivedPacketData receivedPacketData = new ReceivedPacketData(receivedDGram.ClientID, sendTime, (DateTime.UtcNow - sendTime).Milliseconds);
+                ReceivedPacketData receivedPacketData = new ReceivedPacketData(receivedDGram.ClientID, sendTime, (int)(DateTime.UtcNow - sendTime).TotalMilliseconds);
 
                 PacketReceiver.ReadReceivedPacket(ref packet, Header, receivedPacketData);
             }

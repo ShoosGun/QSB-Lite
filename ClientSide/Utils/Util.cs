@@ -58,7 +58,7 @@ namespace SNet_Client.Utils
             lock (state)
             {
                 state.Timer = new Timer((callbackState) => {
-                    if (func())
+                    if (!func())
                     {
                         lock (callbackState) { ((TimerState)callbackState).Timer.Dispose(); }
                     }

@@ -10,7 +10,7 @@ namespace SNet_Client.EntityCreators.Player
         GameObject telescope;
         public void Start()
         {
-            telescope = CreateJetpackMesh(transform);
+            telescope = CreateTelescopeMesh(transform);
             telescope.SetActive(false);
         }
 
@@ -19,7 +19,7 @@ namespace SNet_Client.EntityCreators.Player
             telescope.SetActive(equip);
         }
 
-        private GameObject CreateJetpackMesh(Transform playerT)
+        private GameObject CreateTelescopeMesh(Transform playerT)
         {
             GameObject tele = new GameObject("telescope_mesh");
             tele.transform.parent = playerT.transform;
