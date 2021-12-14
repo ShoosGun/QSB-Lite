@@ -83,7 +83,7 @@ namespace SNet_Client.EntityCreators
             transformEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
 
             DynamicReferenceRigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<DynamicReferenceRigidbodyEntitySync>();
-            rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.Both;
+            rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.VelocityOnly;
             rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
 
             if (createMesh)

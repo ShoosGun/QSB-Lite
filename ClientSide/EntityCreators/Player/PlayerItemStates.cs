@@ -56,11 +56,11 @@ namespace SNet_Client.EntityCreators.Player
         }
 
         private void OnExitTelescopeView() => statesSync.ChangeValue((byte)PlayerStates.USING_TELESCOPE, false);
-
         private void OnEnterTelescopeView(Telescope tele) => statesSync.ChangeValue((byte)PlayerStates.USING_TELESCOPE, true);
 
         private void OnTelescopeStateChange(bool isUsingTelescope)
         {
+            Debug.Log(string.Format("{0} - {1} : Equiped Telescope", gameObject.GetAttachedNetworkedEntity().id, gameObject.GetAttachedNetworkedEntity().ownerId));
             if (telescope != null)
                 telescope.EquipTele(isUsingTelescope);
         }
@@ -71,7 +71,6 @@ namespace SNet_Client.EntityCreators.Player
         }
 
         private void OnFlashlightOff() => statesSync.ChangeValue((byte)PlayerStates.FLASHLIGHT, false);
-
         private void OnFlashlightOn() => statesSync.ChangeValue((byte)PlayerStates.FLASHLIGHT, true);
 
         private void OnFlashlightStateChange(bool isLightEnabled)
