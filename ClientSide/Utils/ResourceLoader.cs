@@ -88,13 +88,12 @@ namespace SNet_Client.Utils
         public static bool GetTelescopeMeshAndMaterial(out MeshMaterialCombo materialAndMesh)
         {
             //Kidtelescope
-
             if (telescopehMeshAndMaterial.mesh != null)
             {
                 materialAndMesh = telescopehMeshAndMaterial;
                 return true;
             }
-            bool result = GetGameObjectMeshAndMaterial("Kidtelescope", out materialAndMesh);
+            bool result = GetGameObjectMeshAndMaterial("Kidtelescope", out telescopehMeshAndMaterial);
             materialAndMesh = telescopehMeshAndMaterial;
             return result;
         }

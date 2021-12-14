@@ -7,8 +7,8 @@ using SNet_Client.Utils;
 using SNet_Client.PacketCouriers.Entities;
 using SNet_Client.PacketCouriers;
 
-using SNet_Client.EntityCreators;
 using SNet_Client.EntityCreators.Player;
+using SNet_Client.EntityCreators.Probe;
 
 namespace SNet_Client
 {

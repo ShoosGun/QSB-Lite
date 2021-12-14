@@ -11,6 +11,7 @@ namespace SNet_Client.Sockets
     {
         private Server server;
         private int maxWaitingTimeForTimeoutOfTheServer = 4000;
+        private const int TIME_FOR_TIMEOUT_OF_SERVER_MULTIPLIER = 2;
 
         private const int MAX_WAITING_TIME_FOR_VERIFICATION = 2000;
         private const int DELTA_TIME_OF_VERIFICATION_LOOP = 1000;
@@ -78,6 +79,14 @@ namespace SNet_Client.Sockets
                 {
                     switch ((PacketTypes)datagramBuffer[0])
                     {
+                        case PacketTypes.PING:
+                            ReceivePing(datagramBuffer, (IPEndPoint)sender);
+                            break;
+                        case PacketTypes.PONG:
+                            ReceivePong(datagramBuffer, (IPEndPoint)sender);
+                            break;
+
+
                         case PacketTypes.CONNECTION:
                             Connection(datagramBuffer);
                             break;
@@ -120,8 +129,11 @@ namespace SNet_Client.Sockets
             
             if (server.GetConnected())
             {
+                //Enviar ao servidor perguntando se está conectado
+                if (deltaTime > maxWaitingTimeForTimeoutOfTheServer * TIME_FOR_TIMEOUT_OF_SERVER_MULTIPLIER / 2)
+                    Ping((IPEndPoint)server.GetServerEndPoint());
                 //Se tiver esse delay então sabemos que deu timeout
-                if (deltaTime > maxWaitingTimeForTimeoutOfTheServer * 6)
+                else if (deltaTime > maxWaitingTimeForTimeoutOfTheServer * TIME_FOR_TIMEOUT_OF_SERVER_MULTIPLIER)
                     Disconnect();
             }
             //Enviar os pacotes reliable
@@ -241,6 +253,34 @@ namespace SNet_Client.Sockets
             Array.Copy(packet.Data, 0, dataGramToSend, 5, packet.Data.Length);
             s.SendTo(dataGramToSend, server.GetServerEndPoint());
         }
+        private void Ping(IPEndPoint receiver)
+        {
+            byte[] dataGramToSend = new byte[1 + 8];
+            dataGramToSend[0] = (byte)PacketTypes.PING; // Header
+            Array.Copy(BitConverter.GetBytes(DateTime.UtcNow.ToBinary()), 0, dataGramToSend, 1, 8); // Tempo em que enviou o ping
+
+            s.SendTo(dataGramToSend, receiver);
+        }
+
+        private void Pong(IPEndPoint receiver, DateTime pingSendTime)
+        {
+            byte[] dataGramToSend = new byte[1 + 8 + 8];
+            dataGramToSend[0] = (byte)PacketTypes.PONG; // Header
+            Array.Copy(BitConverter.GetBytes(DateTime.UtcNow.ToBinary()), 0, dataGramToSend, 1, 8); // Tempo em que enviou o pong
+            Array.Copy(BitConverter.GetBytes(pingSendTime.ToBinary()), 0, dataGramToSend, 9, 8); // Tempo em que o outro enviou o ping
+
+            s.SendTo(dataGramToSend, receiver);
+        }
+        private void ReceivePing(byte[] dgram, IPEndPoint sender)
+        {
+            DateTime pingSendTime = DateTime.FromBinary(BitConverter.ToInt64(dgram, 1));
+            Pong(sender, pingSendTime);// Send the Pong to whoever pinged
+        }
+        private void ReceivePong(byte[] dgram, IPEndPoint sender)
+        {
+            DateTime pongSendTime = DateTime.FromBinary(BitConverter.ToInt64(dgram, 1));
+            DateTime pingSendTime = DateTime.FromBinary(BitConverter.ToInt64(dgram, 9));
+        }
 
         public void Disconnect()
         {
@@ -266,10 +306,13 @@ namespace SNet_Client.Sockets
     }
     enum PacketTypes : byte
     {
+        PING,
+        PONG,
+
         CONNECTION,
         PACKET,
         DISCONNECTION,
         RELIABLE_SEND,
-        RELIABLE_RECEIVED
+        RELIABLE_RECEIVED,
     }
 }

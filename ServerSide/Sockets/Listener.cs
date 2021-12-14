@@ -86,6 +86,13 @@ namespace SNet_Server.Sockets
                 {
                     switch ((PacketTypes)datagramBuffer[0])
                     {
+                        case PacketTypes.PING:
+                            ReceivePing(datagramBuffer, (IPEndPoint)sender);
+                            break;
+                        case PacketTypes.PONG:
+                            ReceivePong(datagramBuffer, (IPEndPoint)sender);
+                            break;
+
                         case PacketTypes.CONNECTION:
                             Connection(datagramBuffer, (IPEndPoint)sender);
                             break;
@@ -147,8 +154,8 @@ namespace SNet_Server.Sockets
                     }
                     else if (timeDifference > MAX_WAITING_TIME_FOR_TIMEOUT / 2) //Dar aviso que ele poderá receber timeout
                     {
-                        //Pela maneira em que está programado a resposta do cliente para mensagens com CONNECTION podemos reutiliza-las como maneira de verificar se estão conectados
-                        s.SendTo(BitConverter.GetBytes((byte)PacketTypes.CONNECTION), client.Value.IpEndpoint);
+                        //Pingar o cliente
+                        Ping(client.Value.IpEndpoint);
                     }
                 }
                 else if (timeDifference > MAX_WAITING_TIME_FOR_CONNECTION_VERIFICATION) //Dar timeout por não ter respondido a tempo
@@ -381,6 +388,38 @@ namespace SNet_Server.Sockets
             s.SendTo(dataGramToSend, clientIP);
         }
 
+        private void Ping(IPEndPoint receiver)
+        {
+            Console.WriteLine("Pinging");
+            byte[] dataGramToSend = new byte[1 + 8];
+            dataGramToSend[0] = (byte)PacketTypes.PING; // Header
+            Array.Copy(BitConverter.GetBytes(DateTime.UtcNow.ToBinary()), 0, dataGramToSend, 1, 8); // Tempo em que enviou o ping
+            
+            s.SendTo(dataGramToSend, receiver);
+        }
+        private void Pong(IPEndPoint receiver, DateTime pingSendTime)
+        {
+            Console.WriteLine("Ponging");
+            byte[] dataGramToSend = new byte[1 + 8 + 8];
+            dataGramToSend[0] = (byte)PacketTypes.PONG; // Header
+            Array.Copy(BitConverter.GetBytes(DateTime.UtcNow.ToBinary()), 0, dataGramToSend, 1, 8); // Tempo em que enviou o pong
+            Array.Copy(BitConverter.GetBytes(pingSendTime.ToBinary()), 0, dataGramToSend, 9, 8); // Tempo em que o outro enviou o ping
+
+            s.SendTo(dataGramToSend, receiver);
+        }
+        private void ReceivePing(byte[] dgram, IPEndPoint sender)
+        {
+            Console.WriteLine("Ping");
+            DateTime pingSendTime = DateTime.FromBinary(BitConverter.ToInt64(dgram, 1));
+            Pong(sender, pingSendTime);// Send the Pong to whoever pinged
+        }
+        private void ReceivePong(byte[] dgram, IPEndPoint sender)
+        {
+            Console.WriteLine("Pong");
+            DateTime pongSendTime = DateTime.FromBinary(BitConverter.ToInt64(dgram, 1));
+            DateTime pingSendTime = DateTime.FromBinary(BitConverter.ToInt64(dgram, 9));
+        }
+
         public void Stop()
         {
             if (!Listening)
@@ -424,10 +463,13 @@ namespace SNet_Server.Sockets
     }
     enum PacketTypes : byte
     {
+        PING,
+        PONG,
+
         CONNECTION,
         PACKET,
         DISCONNECTION,
         RELIABLE_SEND,
-        RELIABLE_RECEIVED
+        RELIABLE_RECEIVED,
     }
 }
