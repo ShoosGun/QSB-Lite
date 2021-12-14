@@ -75,7 +75,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
             if (referenceFrameTransform == null)
                 return rotation;
 
-            return rotation * referenceFrameTransform.rotation;
+            return referenceFrameTransform.rotation * rotation;
         }
         private Quaternion InverseRotationToReferenceFrame(Quaternion rotation)
         {

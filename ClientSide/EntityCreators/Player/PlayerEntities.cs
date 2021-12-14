@@ -110,7 +110,7 @@ namespace SNet_Client.EntityCreators.Player
             transformEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
 
             DynamicReferenceRigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<DynamicReferenceRigidbodyEntitySync>();
-            rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.VelocityOnly;
+            rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.Both;
             rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
 
             EntityStatesSync statesSync = networkedEntity.AddEntityScript<EntityStatesSync>();
