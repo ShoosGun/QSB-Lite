@@ -10,6 +10,11 @@ namespace SNet_Client.EntityCreators.Probe
         {
             probeLight = CreatePlayerLight(transform);
         }
+        public void ProbeAttached(bool isAttached = true)
+        {
+            if (isAttached)
+                probeLight.enabled = true;
+        }
         private Light CreatePlayerLight(Transform probeT)
         {
             GameObject lightGO = new GameObject("probe_light");

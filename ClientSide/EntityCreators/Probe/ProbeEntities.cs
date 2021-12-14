@@ -3,10 +3,13 @@
 using SNet_Client.PacketCouriers;
 using SNet_Client.PacketCouriers.Entities;
 using SNet_Client.Sockets;
-using SNet_Client.EntityScripts.TransfromSync;
+
 using SNet_Client.Utils;
 
-namespace SNet_Client.EntityCreators
+using SNet_Client.EntityScripts.StateSync;
+using SNet_Client.EntityScripts.TransfromSync;
+
+namespace SNet_Client.EntityCreators.Probe
 {
     public class ProbeEntities : MonoBehaviour
     {
@@ -85,6 +88,15 @@ namespace SNet_Client.EntityCreators
             DynamicReferenceRigidbodyEntitySync rigibodyEntitySync = networkedEntity.AddEntityScript<DynamicReferenceRigidbodyEntitySync>();
             rigibodyEntitySync.syncRigidbodyType = SyncRigidbody.Both;
             rigibodyEntitySync.referenceFrame = ReferenceFrames.Timber_Hearth;
+
+            networkedEntity.AddEntityScript<EntityStatesSync>();
+
+            go.AddComponent<ProbeStatesSync>();
+
+            if (ownerID != ServerInteraction.GetOwnerID())
+            {
+                go.AddComponent<ProbeLightsAndSound>();
+            }
 
             if (createMesh)
             {

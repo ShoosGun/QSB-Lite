@@ -57,6 +57,7 @@
     <Compile Include="EntityCreators\Player\PlayerStates.cs" />
     <Compile Include="EntityCreators\Player\PlayerTelescope.cs" />
     <Compile Include="EntityCreators\Player\PlayerSuit.cs" />
+    <Compile Include="EntityCreators\Probe\ProbeStatesSync.cs" />
     <Compile Include="EntityCreators\Probe\ProbeEntities.cs" />
     <Compile Include="EntityCreators\Probe\ProbeLightsAndSound.cs" />
     <Compile Include="EntityCreators\Probe\ProbeStates.cs" />

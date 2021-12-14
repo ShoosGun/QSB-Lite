@@ -116,8 +116,7 @@ namespace SNet_Client.EntityCreators.Player
             EntityStatesSync statesSync = networkedEntity.AddEntityScript<EntityStatesSync>();
             
             go.AddComponent<PlayerItemStates>();
-
-            //TODO Deixar melhor separado cada elemento (mellow stick, suit, flashlight, ...)
+            
             if (ownerID != ServerInteraction.GetOwnerID())
             {
                 go.AddComponent<PlayerLight>();

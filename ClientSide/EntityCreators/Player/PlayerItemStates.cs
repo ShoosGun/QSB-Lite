@@ -12,6 +12,7 @@ namespace SNet_Client.EntityCreators.Player
 
         private PlayerTelescope telescope;
 
+        //TODO adicionar sync do graveto
         public GameObject MellowStick;
 
         private PlayerLight playerLight;
