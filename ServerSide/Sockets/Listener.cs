@@ -398,7 +398,6 @@ namespace SNet_Server.Sockets
         }
         private void Pong(IPEndPoint receiver, DateTime pingSendTime)
         {
-            Console.WriteLine("Ponging");
             byte[] dataGramToSend = new byte[1 + 8 + 8];
             dataGramToSend[0] = (byte)PacketTypes.PONG; // Header
             Array.Copy(BitConverter.GetBytes(DateTime.UtcNow.ToBinary()), 0, dataGramToSend, 1, 8); // Tempo em que enviou o pong
@@ -413,7 +412,6 @@ namespace SNet_Server.Sockets
         }
         private void ReceivePong(byte[] dgram, IPEndPoint sender)
         {
-            Console.WriteLine("Pong");
             DateTime pongSendTime = DateTime.FromBinary(BitConverter.ToInt64(dgram, 1));
             DateTime pingSendTime = DateTime.FromBinary(BitConverter.ToInt64(dgram, 9));
         }
