@@ -390,7 +390,6 @@ namespace SNet_Server.Sockets
 
         private void Ping(IPEndPoint receiver)
         {
-            Console.WriteLine("Pinging");
             byte[] dataGramToSend = new byte[1 + 8];
             dataGramToSend[0] = (byte)PacketTypes.PING; // Header
             Array.Copy(BitConverter.GetBytes(DateTime.UtcNow.ToBinary()), 0, dataGramToSend, 1, 8); // Tempo em que enviou o ping
@@ -409,7 +408,6 @@ namespace SNet_Server.Sockets
         }
         private void ReceivePing(byte[] dgram, IPEndPoint sender)
         {
-            Console.WriteLine("Ping");
             DateTime pingSendTime = DateTime.FromBinary(BitConverter.ToInt64(dgram, 1));
             Pong(sender, pingSendTime);// Send the Pong to whoever pinged
         }
