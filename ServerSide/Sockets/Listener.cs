@@ -181,7 +181,7 @@ namespace SNet_Server.Sockets
                 else
                 {
                     for (int i = 0; i < packet.Value.ClientsLeftToReceive.Count; i++)
-                        SendReliable(packet.Value.Data, packet.Value.PacketID, packet.Value.ClientsLeftToReceive[i]);
+                        SendReliablePacket(packet.Value.Data, packet.Value.PacketID, packet.Value.ClientsLeftToReceive[i]);
                 }
             }
             for (int i = 0; i < packetsToRemove.Count; i++)
@@ -193,6 +193,7 @@ namespace SNet_Server.Sockets
         //Cliente -> Servidor -> Cliente -> Servidor
         private void Connection(byte[] dgram, IPEndPoint sender)
         {
+            Console.WriteLine("Numero de clientes: {0}", Clients.Count);
             Client client;
 
             if (IPEndpointToClientIDMap.TryGetValue(sender, out string key))
@@ -353,7 +354,7 @@ namespace SNet_Server.Sockets
                     client.Value.ReliablePacketsToReceive.Add(packet.PacketID, packet);
                     packet.ClientsLeftToReceive.Add(client.Value.IpEndpoint);
 
-                    SendReliable(dgram, packet.PacketID, client.Value.IpEndpoint);
+                    SendReliablePacket(dgram, packet.PacketID, client.Value.IpEndpoint);
                 }
             }
             
@@ -374,11 +375,11 @@ namespace SNet_Server.Sockets
 
             ReliablePackets.TryAdd(packet.PacketID, packet);
 
-            SendReliable(dgram, packet.PacketID, clientData.IpEndpoint);
+            SendReliablePacket(dgram, packet.PacketID, clientData.IpEndpoint);
             return true;
         }
         //Client -> Server -> Client
-        private void SendReliable(byte[] dgram, int packetID, IPEndPoint clientIP)
+        private void SendReliablePacket(byte[] dgram, int packetID, IPEndPoint clientIP)
         {
             byte[] dataGramToSend = new byte[dgram.Length + 1 + 4];
             dataGramToSend[0] = (byte)PacketTypes.RELIABLE_SEND; // Header

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-
 using SNet_Server.Utils;
 
 namespace SNet_Server.Sockets
@@ -29,7 +28,7 @@ namespace SNet_Server.Sockets
         {
             ReceivedDataCache.Enqueue(new ClientEssentials(id, dgram));
         }
-
+        
         private void L_OnClientConnection(string id)
         {
             Console.WriteLine("Novo cliente ID = {0}", id);

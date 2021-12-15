@@ -66,7 +66,7 @@ namespace SNet_Server.PacketCouriers
             else
                 server.SendAllReliable(buffer.GetBytes(), HeaderValue);
 
-            Console.WriteLine("Enviando dado da entidade de {0} (ID {1} Prefab {2}) (tamanho {3}) para os clientes", ownerID, id, prefab, initializationData.Length);
+            Console.WriteLine("Enviando dado da entidade de {0} (ID {1} Prefab {2}) (tamanho {3}) para os clientes {4}", ownerID, id, prefab, initializationData.Length, clientId);
         }
 
         private void SendBufferedEntitiesToNewClient(string clientID)

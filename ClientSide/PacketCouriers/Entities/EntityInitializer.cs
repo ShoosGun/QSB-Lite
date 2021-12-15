@@ -108,10 +108,12 @@ namespace SNet_Client.PacketCouriers.Entities
                 throw new OperationCanceledException(string.Format("There is no GameObject in {0}", prefabName));
 
             NetworkedEntity networkedEntity = prefab(position, rotation, ownerID, data);
+            if (networkedEntity == null)
+                return;
+
             networkedEntity.id = ID;
             networkedEntity.ownerId = ownerID;
             Debug.Log(string.Format("{0} {1} {2}", ownerID, ID, prefabName));
-            
             InstantiadableGameObjectsPrefabHub.ownersDictionary.AddEntity(networkedEntity);
         }
 
