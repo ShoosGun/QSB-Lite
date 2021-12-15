@@ -77,6 +77,7 @@ namespace SNet_Client.EntityScripts.TransfromSync
 
             return rotation * referenceFrameTransform.rotation;
         }
+        //From here: https://forum.unity.com/threads/get-the-difference-between-two-quaternions-and-add-it-to-another-quaternion.513187/
         private Quaternion InverseRotationToReferenceFrame(Quaternion rotation)
         {
             if (referenceFrameTransform == null)
