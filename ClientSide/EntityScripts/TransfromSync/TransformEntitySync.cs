@@ -39,18 +39,22 @@ namespace SNet_Client.EntityScripts.TransfromSync
             if (!isOurs)
             {
                 transform.position = WithReferenceFrame(latestPosition);
-                transform.rotation = RotationToReferenceFrame(lastestRotation);
+                transform.rotation = RotationTransformDirection(lastestRotationAngle, lastestRotationAxis);
             }
         }
 
         Vector3 latestPosition;
-        Quaternion lastestRotation;
+        Vector3 lastestRotationAxis;
+        float lastestRotationAngle;
         public override void OnDeserialize(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
             if (syncTransformType == SyncTransform.PositionOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
                 latestPosition = reader.ReadVector3();
             if (syncTransformType == SyncTransform.RotationOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
-                lastestRotation = reader.ReadQuaternion();
+            {
+                lastestRotationAngle = reader.ReadSingle();
+                lastestRotationAxis = reader.ReadVector3();
+            }
             if (syncTransformType == SyncTransform.ScaleOnly || syncTransformType == SyncTransform.All)
                 transform.localScale = reader.ReadVector3();
         }
@@ -70,23 +74,20 @@ namespace SNet_Client.EntityScripts.TransfromSync
             return referenceFrameTransform.TransformPoint(position);
         }
 
-        private Quaternion RotationToReferenceFrame(Quaternion rotation)
+        private Quaternion RotationTransformDirection(float angle, Vector3 axis)
         {
-            if (referenceFrameTransform == null)
-                return rotation;
+            if (referenceFrameTransform != null)
+                axis = referenceFrameTransform.TransformDirection(axis);
 
-            return rotation * referenceFrameTransform.rotation;
+            return Quaternion.AngleAxis(angle, axis);
         }
-        //From here: https://forum.unity.com/threads/get-the-difference-between-two-quaternions-and-add-it-to-another-quaternion.513187/
-        private Quaternion InverseRotationToReferenceFrame(Quaternion rotation)
+        private void RotationInverseTransformDirection(Quaternion rotation, out float angle, out Vector3 axis)
         {
+            rotation.ToAngleAxis(out angle, out axis);
             if (referenceFrameTransform == null)
-                return rotation;
+                return;
 
-            Quaternion referenceRotInReferenceToIdentity = Quaternion.identity * Quaternion.Inverse(referenceFrameTransform.rotation);
-            Quaternion roationInReferenceToIdentity = Quaternion.identity * Quaternion.Inverse(rotation);
-
-            return roationInReferenceToIdentity * Quaternion.Inverse(referenceRotInReferenceToIdentity);
+            axis = referenceFrameTransform.InverseTransformDirection(axis);
         }
 
         public override void OnSerialize(ref PacketWriter writer)
@@ -94,7 +95,11 @@ namespace SNet_Client.EntityScripts.TransfromSync
             if (syncTransformType == SyncTransform.PositionOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
                 writer.Write(InverseWithReferenceFrame(transform.position));
             if (syncTransformType == SyncTransform.RotationOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
-                writer.Write(InverseRotationToReferenceFrame(transform.rotation));
+            {
+                RotationInverseTransformDirection(transform.rotation, out float angle, out Vector3 axis);
+                writer.Write(angle);
+                writer.Write(axis);
+            }
             if (syncTransformType == SyncTransform.ScaleOnly || syncTransformType == SyncTransform.All)
                 writer.Write(transform.localScale);
         }
