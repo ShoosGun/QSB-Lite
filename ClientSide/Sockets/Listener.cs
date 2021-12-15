@@ -159,9 +159,6 @@ namespace SNet_Client.Sockets
                 //Verificações com tempo de vida que ocorrem a cada
                 Util.RepeatDelayedAction(DELTA_TIME_OF_VERIFICATION_LOOP, DELTA_TIME_OF_VERIFICATION_LOOP, TimedVerificationsLoop);
             }
-            //Enviar a confirmação que recebemos a conecção
-            byte[] awnserBuffer = BitConverter.GetBytes((byte)PacketTypes.CONNECTION);
-            s.SendTo(awnserBuffer, server.GetServerEndPoint());
             //Usar aqui possiveis dados que vieram com o dgram
         }
 

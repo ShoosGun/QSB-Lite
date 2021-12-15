@@ -9,14 +9,12 @@ namespace SNet_Server.Sockets
         public IPEndPoint IpEndpoint;
         public string ID;
         public DateTime TimeOfLastPacket;
-        public bool IsConnected;
 
         public Dictionary<int, ReliablePacket> ReliablePacketsToReceive;
 
         public Client()
         { 
             ReliablePacketsToReceive = new Dictionary<int, ReliablePacket>();
-            IsConnected = false;
             TimeOfLastPacket = DateTime.UtcNow;
         }
     }

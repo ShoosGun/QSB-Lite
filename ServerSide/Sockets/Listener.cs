@@ -146,21 +146,15 @@ namespace SNet_Server.Sockets
             foreach (var client in Clients)
             {
                 int timeDifference = (int)(currentVerificationTime - client.Value.TimeOfLastPacket).TotalMilliseconds;
-                if (client.Value.IsConnected)
-                {
-                    if (timeDifference > MAX_WAITING_TIME_FOR_TIMEOUT) //Dar timeout
-                    {
-                        clientsToDisconnect.Add(client.Value.IpEndpoint);
-                    }
-                    else if (timeDifference > MAX_WAITING_TIME_FOR_TIMEOUT / 2) //Dar aviso que ele poderá receber timeout
-                    {
-                        //Pingar o cliente
-                        Ping(client.Value.IpEndpoint);
-                    }
-                }
-                else if (timeDifference > MAX_WAITING_TIME_FOR_CONNECTION_VERIFICATION) //Dar timeout por não ter respondido a tempo
+
+                if (timeDifference > MAX_WAITING_TIME_FOR_TIMEOUT) //Dar timeout
                 {
                     clientsToDisconnect.Add(client.Value.IpEndpoint);
+                }
+                else if (timeDifference > MAX_WAITING_TIME_FOR_TIMEOUT / 2) //Dar aviso que ele poderá receber timeout
+                {
+                    //Pingar o cliente
+                    Ping(client.Value.IpEndpoint);
                 }
             }
 
@@ -190,36 +184,28 @@ namespace SNet_Server.Sockets
             return Listening; //Vai parar esse loop se listener estiver desativado
         }
 
-        //Cliente -> Servidor -> Cliente -> Servidor
+        //Cliente -> Servidor -> Cliente
         private void Connection(byte[] dgram, IPEndPoint sender)
         {
-            Console.WriteLine("Numero de clientes: {0}", Clients.Count);
-            Client client;
-
             if (IPEndpointToClientIDMap.TryGetValue(sender, out string key))
-            {
-                Clients.TryGetValue(key, out client);
-
-                if (!client.IsConnected)
-                    OnClientConnection?.Invoke(client.ID);
-
-                //Se esse cliente existe então podemos definir que ele está sim conectado
-                client.IsConnected = true;
                 return;
-            }
 
-            client = new Client() { IpEndpoint = sender, ID = Guid.NewGuid().ToString() };
-
-            //Se não existia antes quer dizer que é um novo cliente, fazer o processo de enviar e receber o pedido e gravalo como um cliente não conectado
+            Client client = new Client() { IpEndpoint = sender, ID = Guid.NewGuid().ToString() };
+            
             Clients.TryAdd(client.ID, client);
             IPEndpointToClientIDMap.TryAdd(sender, client.ID);
-
-
+            
+            //Enviar ao cliente e confirmar que sim, recebemos a confirmação de conecção
             byte[] awnserBuffer = new byte[5];
             awnserBuffer[0] = (byte)PacketTypes.CONNECTION;
             Array.Copy(BitConverter.GetBytes(MAX_WAITING_TIME_FOR_TIMEOUT), 0, awnserBuffer, 1, 4);
             s.SendTo(awnserBuffer, sender);
-            //Usar aqui possiveis dados que vieram com o dgram            
+
+            //Usar aqui possiveis dados que vieram com o dgram  
+            
+            OnClientConnection?.Invoke(client.ID);
+
+            Console.WriteLine("Current Clients - {0}/{1}: {2}", Clients.Count, IPEndpointToClientIDMap.Count, Clients.Keys.Aggregate((s1, s2) => s1 + ' ' + s2));
         }
 
         //Cliente -> Servidor -> Cliente
@@ -245,9 +231,8 @@ namespace SNet_Server.Sockets
             if (!IPEndpointToClientIDMap.TryGetValue(sender, out string key))
                 return;
 
-            Clients.TryGetValue(key, out Client client);
-            //Se o cliente está mesmo conectado então podemos receber dados dele
-            if (!client.IsConnected)
+            //Se ele é mesmo um cliente então podemos receber dados dele
+            if (!Clients.TryGetValue(key, out Client client))
                 return;
 
             byte[] treatedDGram = new byte[dgram.Length - 1];
@@ -261,8 +246,7 @@ namespace SNet_Server.Sockets
             if (!IPEndpointToClientIDMap.TryGetValue(sender, out string key))
                 return;
 
-            Clients.TryGetValue(key, out Client client);
-            if (!client.IsConnected)
+            if (!Clients.TryGetValue(key, out Client client))
                 return;
 
             //Resposta de que recebemos o pacote reliable
@@ -282,8 +266,7 @@ namespace SNet_Server.Sockets
             if (!IPEndpointToClientIDMap.TryGetValue(sender, out string key))
                 return;
 
-            Clients.TryGetValue(key, out Client client);
-            if (!client.IsConnected)
+            if (!Clients.TryGetValue(key, out Client client))
                 return;
 
             int packeID = BitConverter.ToInt32(dgram, 1);
@@ -304,7 +287,7 @@ namespace SNet_Server.Sockets
 
             foreach (var client in Clients)
             {
-                if (!dontSendTo.Contains(client.Value.ID) && client.Value.IsConnected)
+                if (!dontSendTo.Contains(client.Value.ID))
                     s.SendTo(dataGramToSend, client.Value.IpEndpoint);
             }
         }
@@ -313,9 +296,8 @@ namespace SNet_Server.Sockets
         {
             if (dgram.Length >= DATAGRAM_MAX_SIZE)
                 return false;
-            
-            Clients.TryGetValue(client, out Client clientData);
-            if (!clientData.IsConnected)
+
+            if (!Clients.TryGetValue(client, out Client clientData))
                 return false;
 
             //Adicionar o header PACKET na frente da mensagem
@@ -349,7 +331,7 @@ namespace SNet_Server.Sockets
             
             foreach (var client in Clients)
             {
-                if (!dontSendTo.Contains(client.Value.ID) && client.Value.IsConnected)
+                if (!dontSendTo.Contains(client.Value.ID))
                 {
                     client.Value.ReliablePacketsToReceive.Add(packet.PacketID, packet);
                     packet.ClientsLeftToReceive.Add(client.Value.IpEndpoint);
