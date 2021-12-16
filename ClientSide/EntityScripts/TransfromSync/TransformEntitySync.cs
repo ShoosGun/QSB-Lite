@@ -19,6 +19,10 @@ namespace SNet_Client.EntityScripts.TransfromSync
         public ReferenceFrames referenceFrame = ReferenceFrames.Sun;
         protected Transform referenceFrameTransform;
 
+        Vector3 latestPosition;
+        Vector3 lastestUp;
+        Vector3 lastestFoward;
+
         protected virtual void Awake()
         {
             UniqueScriptIdentifingString = "TransformEntitySync";
@@ -31,29 +35,28 @@ namespace SNet_Client.EntityScripts.TransfromSync
             referenceFrameTransform = ReferenceFrameLocator.GetReferenceFrame(referenceFrame);
 
             isOurs = gameObject.GetAttachedNetworkedEntity().IsOurs();
+
+            latestPosition = transform.position;
+            lastestUp = transform.up;
+            lastestFoward = transform.forward;
             //Debug.Log(string.Format("Reference Type {0} e Sync Type {1}", syncTransformType, referenceFrame));
         }
-
         protected virtual void FixedUpdate()
         {
             if (!isOurs)
             {
                 transform.position = WithReferenceFrame(latestPosition);
-                transform.rotation = RotationTransformDirection(lastestRotationAngle, lastestRotationAxis);
+                transform.rotation = RotationTransformDirection(lastestUp, lastestFoward);
             }
         }
-
-        Vector3 latestPosition;
-        Vector3 lastestRotationAxis;
-        float lastestRotationAngle;
         public override void OnDeserialize(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
             if (syncTransformType == SyncTransform.PositionOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
                 latestPosition = reader.ReadVector3();
             if (syncTransformType == SyncTransform.RotationOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
             {
-                lastestRotationAngle = reader.ReadSingle();
-                lastestRotationAxis = reader.ReadVector3();
+                lastestUp = reader.ReadVector3();
+                lastestFoward = reader.ReadVector3();
             }
             if (syncTransformType == SyncTransform.ScaleOnly || syncTransformType == SyncTransform.All)
                 transform.localScale = reader.ReadVector3();
@@ -74,20 +77,25 @@ namespace SNet_Client.EntityScripts.TransfromSync
             return referenceFrameTransform.TransformPoint(position);
         }
 
-        private Quaternion RotationTransformDirection(float angle, Vector3 axis)
+        private Quaternion RotationTransformDirection(Vector3 up, Vector3 foward)
         {
             if (referenceFrameTransform != null)
-                axis = referenceFrameTransform.TransformDirection(axis);
+            {
+                up = referenceFrameTransform.TransformDirection(up);
+                foward = referenceFrameTransform.TransformDirection(foward);
+            }
 
-            return Quaternion.AngleAxis(angle, axis);
+            return Quaternion.LookRotation(foward, up);
         }
-        private void RotationInverseTransformDirection(Quaternion rotation, out float angle, out Vector3 axis)
+        private void RotationInverseTransformDirection(Transform transform, out Vector3 up, out Vector3 foward)
         {
-            rotation.ToAngleAxis(out angle, out axis);
+            up = transform.up;
+            foward = transform.forward;
             if (referenceFrameTransform == null)
                 return;
 
-            axis = referenceFrameTransform.InverseTransformDirection(axis);
+            up = referenceFrameTransform.InverseTransformDirection(up);
+            foward = referenceFrameTransform.InverseTransformDirection(foward);
         }
 
         public override void OnSerialize(ref PacketWriter writer)
@@ -96,9 +104,9 @@ namespace SNet_Client.EntityScripts.TransfromSync
                 writer.Write(InverseWithReferenceFrame(transform.position));
             if (syncTransformType == SyncTransform.RotationOnly || syncTransformType == SyncTransform.PositionAndRotationOnly || syncTransformType == SyncTransform.All)
             {
-                RotationInverseTransformDirection(transform.rotation, out float angle, out Vector3 axis);
-                writer.Write(angle);
-                writer.Write(axis);
+                RotationInverseTransformDirection(transform, out Vector3 up, out Vector3 foward);
+                writer.Write(up);
+                writer.Write(foward);
             }
             if (syncTransformType == SyncTransform.ScaleOnly || syncTransformType == SyncTransform.All)
                 writer.Write(transform.localScale);

@@ -38,6 +38,12 @@ namespace SNet_Client.Utils
             materialAndMesh = villagerMeshAndMaterial;
             return result;
         }
+        public static bool GetVillagerRigGameObject(out GameObject gameObject)
+        {
+            gameObject = GameObject.Find("Villagers/Craftsman/Villager_Base");
+            return gameObject != null;
+        }
+		//Has: Animator
 
         private static MeshMaterialCombo jetpackMeshAndMaterial;
         public static bool GetJetpackMeshAndMaterial(out MeshMaterialCombo materialAndMesh)
@@ -73,7 +79,6 @@ namespace SNet_Client.Utils
         public static bool GetProbeMeshAndMaterial(out MeshMaterialCombo materialAndMesh)
         {
             //Probe
-
             if (probehMeshAndMaterial.mesh != null)
             {
                 materialAndMesh = probehMeshAndMaterial;
@@ -82,6 +87,24 @@ namespace SNet_Client.Utils
             bool result = GetGameObjectMeshAndMaterial("Probe", out probehMeshAndMaterial);
             materialAndMesh = probehMeshAndMaterial;
             return result;
+        }
+        private static MeshMaterialCombo remoteShipMeshAndMaterial;
+        public static bool GetRemoteShipMeshAndMaterial(out MeshMaterialCombo materialAndMesh)
+        {
+            //ModelShip_Body/toyship
+            if (probehMeshAndMaterial.mesh != null)
+            {
+                materialAndMesh = probehMeshAndMaterial;
+                return true;
+            }
+            bool result = GetGameObjectMeshAndMaterial("ModelShip_Body/toyship", out remoteShipMeshAndMaterial);
+            materialAndMesh = remoteShipMeshAndMaterial;
+            return result;
+        }
+        public static bool GetRemoteShipThrusterParticleSystemGameObject(out GameObject gameObject)
+        {
+            gameObject = GameObject.Find("Thrusters/ForwardThruster/Thruster_Small");
+            return gameObject != null;
         }
 
         private static MeshMaterialCombo telescopehMeshAndMaterial;
@@ -95,6 +118,25 @@ namespace SNet_Client.Utils
             }
             bool result = GetGameObjectMeshAndMaterial("Kidtelescope", out telescopehMeshAndMaterial);
             materialAndMesh = telescopehMeshAndMaterial;
+            return result;
+        }
+
+        public static bool GetMarshmallowStickGameObject(out GameObject gameObject)
+        {
+            gameObject = GameObject.Find("MarshmallowStick/StickAndTherm");
+            return gameObject != null;
+        }
+		private static MeshMaterialCombo marshmallowMeshAndMaterial;
+		public static bool GetMarshmallowMeshAndMaterial(out MeshMaterialCombo materialAndMesh)
+        {
+            //Marshmallow/MarshmallowModel
+            if (marshmallowMeshAndMaterial.mesh != null)
+            {
+                materialAndMesh = marshmallowMeshAndMaterial;
+                return true;
+            }
+            bool result = GetGameObjectMeshAndMaterial("Marshmallow/MarshmallowModel", out marshmallowMeshAndMaterial);
+            materialAndMesh = marshmallowMeshAndMaterial;
             return result;
         }
     }

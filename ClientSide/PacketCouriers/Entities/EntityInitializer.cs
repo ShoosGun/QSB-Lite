@@ -114,7 +114,12 @@ namespace SNet_Client.PacketCouriers.Entities
             networkedEntity.id = ID;
             networkedEntity.ownerId = ownerID;
             Debug.Log(string.Format("{0} {1} {2}", ownerID, ID, prefabName));
-            InstantiadableGameObjectsPrefabHub.ownersDictionary.AddEntity(networkedEntity);
+            if (!InstantiadableGameObjectsPrefabHub.ownersDictionary.AddEntity(networkedEntity))
+            {
+                Debug.Log(string.Format("The entity {0} {1} {2} already exists, destroying duplicate", ownerID, ID, prefabName));
+                networkedEntity.ownerId = -1; //Setting it as having no owner so DestroyEntity doesn't get triggered
+                Destroy(networkedEntity);
+            }
         }
 
         public void DestroyEntity(NetworkedEntity networkedEntity)

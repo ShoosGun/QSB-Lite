@@ -168,6 +168,9 @@ namespace SNet_Client.Utils
             {ReferenceFrames.Dark_Bramble_Nodes, new ReferenceFrameFindingData[]{
             new ReferenceFrameFindingData(){ ObjectSceneName= "DarkBramble_Body", RadiusOfInfluence = 3000f} } },
 
+            {ReferenceFrames.Dark_Bramble_Feldspar_Node, new ReferenceFrameFindingData[]{
+            new ReferenceFrameFindingData(){ ObjectSceneName= "DonutAsteroid_Body", RadiusOfInfluence = 150f} } },
+
             {ReferenceFrames.Derelict_Node, new ReferenceFrameFindingData[]{
             new ReferenceFrameFindingData(){ ObjectSceneName= "DerelictDimension_Body", RadiusOfInfluence = 600f} } },
 
@@ -211,6 +214,7 @@ namespace SNet_Client.Utils
 
         Dark_Bramble,
         Dark_Bramble_Nodes,
+        Dark_Bramble_Feldspar_Node,
         Derelict_Node, // The vessel node in the alpha
 
         Stranger,

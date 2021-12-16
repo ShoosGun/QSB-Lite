@@ -84,15 +84,18 @@ namespace SNet_Client.PacketCouriers.Entities
             Remove(ownerID);
         }
 
-        public void AddEntity(NetworkedEntity networkedEntity)
+        public bool AddEntity(NetworkedEntity networkedEntity)
         {
             if (!TryGetValue(networkedEntity.ownerId, out NetworkedEntityDictionary entities))
             {
                 entities = new NetworkedEntityDictionary();
                 Add(networkedEntity.ownerId, entities);
             }
+            if (entities.Contains(networkedEntity))
+                return false;
 
             entities.Add(networkedEntity);
+            return true;
         }
     }
 }
