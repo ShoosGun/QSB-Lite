@@ -131,25 +131,15 @@ namespace SNet_Client.EntityCreators.Player
                 //Mesh do player
                 if(CreatePlayerMesh(go.transform, out GameObject playerMesh))
                 {
-                    Debug.Log("Animacione");
                     AnimationClip clip = new AnimationClip();
                     Quaternion rotationA = Quaternion.Euler(0f, 0f, -245.683f);
-                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT", typeof(Transform), "localRotation.w", AnimationCurve.Linear(0f, rotationA.w, 1f, rotationA.w));
-                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT", typeof(Transform), "localRotation.x", AnimationCurve.Linear(0f, rotationA.x, 1f, rotationA.x));
-                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT", typeof(Transform), "localRotation.y", AnimationCurve.Linear(0f, rotationA.y, 1f, rotationA.y));
-                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT", typeof(Transform), "localRotation.z", AnimationCurve.Linear(0f, rotationA.z, 1f, rotationA.z));
+                    clip.SetLinearRotationCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT", 0f, Quaternion.identity, 1f, rotationA);
 
                     Quaternion rotationB = Quaternion.Euler(-6.571f, 68.04601f, 2.641f);
-                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT", typeof(Transform), "localRotation.w", AnimationCurve.Linear(0f, rotationB.w, 1f, rotationB.w));
-                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT", typeof(Transform), "localRotation.x", AnimationCurve.Linear(0f, rotationB.x, 1f, rotationB.x));
-                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT", typeof(Transform), "localRotation.y", AnimationCurve.Linear(0f, rotationB.y, 1f, rotationB.y));
-                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT", typeof(Transform), "localRotation.z", AnimationCurve.Linear(0f, rotationB.z, 1f, rotationB.z));
+                    clip.SetLinearRotationCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT", 0f, Quaternion.identity, 1f, rotationB);
 
                     Quaternion rotationC = Quaternion.Euler(-46.611f, -7.092f, 9.715f);
-                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT/villager_rig:L_elbow_JNT", typeof(Transform), "localRotation.w", AnimationCurve.Linear(0f, rotationC.w, 1f, rotationC.w));
-                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT/villager_rig:L_elbow_JNT", typeof(Transform), "localRotation.x", AnimationCurve.Linear(0f, rotationC.x, 1f, rotationC.x));
-                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT/villager_rig:L_elbow_JNT", typeof(Transform), "localRotation.y", AnimationCurve.Linear(0f, rotationC.y, 1f, rotationC.y));
-                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT/villager_rig:L_elbow_JNT", typeof(Transform), "localRotation.z", AnimationCurve.Linear(0f, rotationC.z, 1f, rotationC.z));
+                    clip.SetLinearRotationCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT/villager_rig:L_elbow_JNT",0f, Quaternion.identity,1f, rotationC);
                     clip.wrapMode = WrapMode.Loop;
                     playerMesh.GetComponent<Animator>().enabled = false;
                     playerMesh.AddComponent<Animation>().AddClip(clip, "AAAAA");
