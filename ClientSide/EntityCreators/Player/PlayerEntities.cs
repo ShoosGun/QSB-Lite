@@ -126,28 +126,56 @@ namespace SNet_Client.EntityCreators.Player
 
             if (createMesh)
             {
+				//CTRL - JNT
                 //Copiar o objeto "Villager_Base" para podermos ter IK e outras coisas para animar 
-                Debug.Log("player");
                 //Mesh do player
-                CreatePlayerMesh(go.transform);
+                if(CreatePlayerMesh(go.transform, out GameObject playerMesh))
+                {
+                    Debug.Log("Animacione");
+                    AnimationClip clip = new AnimationClip();
+                    Quaternion rotationA = Quaternion.Euler(0f, 0f, -245.683f);
+                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT", typeof(Transform), "localRotation.w", AnimationCurve.Linear(0f, rotationA.w, 1f, rotationA.w));
+                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT", typeof(Transform), "localRotation.x", AnimationCurve.Linear(0f, rotationA.x, 1f, rotationA.x));
+                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT", typeof(Transform), "localRotation.y", AnimationCurve.Linear(0f, rotationA.y, 1f, rotationA.y));
+                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT", typeof(Transform), "localRotation.z", AnimationCurve.Linear(0f, rotationA.z, 1f, rotationA.z));
+
+                    Quaternion rotationB = Quaternion.Euler(-6.571f, 68.04601f, 2.641f);
+                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT", typeof(Transform), "localRotation.w", AnimationCurve.Linear(0f, rotationB.w, 1f, rotationB.w));
+                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT", typeof(Transform), "localRotation.x", AnimationCurve.Linear(0f, rotationB.x, 1f, rotationB.x));
+                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT", typeof(Transform), "localRotation.y", AnimationCurve.Linear(0f, rotationB.y, 1f, rotationB.y));
+                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT", typeof(Transform), "localRotation.z", AnimationCurve.Linear(0f, rotationB.z, 1f, rotationB.z));
+
+                    Quaternion rotationC = Quaternion.Euler(-46.611f, -7.092f, 9.715f);
+                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT/villager_rig:L_elbow_JNT", typeof(Transform), "localRotation.w", AnimationCurve.Linear(0f, rotationC.w, 1f, rotationC.w));
+                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT/villager_rig:L_elbow_JNT", typeof(Transform), "localRotation.x", AnimationCurve.Linear(0f, rotationC.x, 1f, rotationC.x));
+                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT/villager_rig:L_elbow_JNT", typeof(Transform), "localRotation.y", AnimationCurve.Linear(0f, rotationC.y, 1f, rotationC.y));
+                    clip.SetCurve("villager_rig:Root_JNT/villager_rig:Spine1_JNT/villager_rig:Spine2_JNT/villager_rig:Spine3_JNT/villager_rig:L_clavicle_JNT/villager_rig:L_shoulder_JNT/villager_rig:L_elbow_JNT", typeof(Transform), "localRotation.z", AnimationCurve.Linear(0f, rotationC.z, 1f, rotationC.z));
+                    clip.wrapMode = WrapMode.Loop;
+                    playerMesh.GetComponent<Animator>().enabled = false;
+                    playerMesh.AddComponent<Animation>().AddClip(clip, "AAAAA");
+                    playerMesh.animation.Play("AAAAA", PlayMode.StopAll);
+                }
             }
 
             return networkedEntity;
         }
 
-        private GameObject CreatePlayerMesh(Transform playerT)
+        private bool CreatePlayerMesh(Transform playerT, out GameObject playerMesh)
         {
-            GameObject mesh = new GameObject("player_mesh");
-            mesh.transform.parent = playerT;
-            mesh.transform.localPosition = new Vector3(0f, -1f, 0f);
-            mesh.transform.localRotation = Quaternion.identity;
-            mesh.transform.localScale = Vector3.one;
-            if (ResourceLoader.GetVillagerMeshAndMaterial(out MeshMaterialCombo playerMeshAndMaterial))
-            {
-                mesh.AddComponent<MeshFilter>().mesh = playerMeshAndMaterial.mesh;
-                mesh.AddComponent<MeshRenderer>().material = playerMeshAndMaterial.material;
-            }
-            return mesh;
+            playerMesh = null;
+            if (!ResourceLoader.GetVillagerRigGameObject(out GameObject villagerRigGO))
+                return false;
+
+            playerMesh = (GameObject)Instantiate(villagerRigGO);
+
+            playerMesh.transform.name = "player_mesh";
+
+            playerMesh.transform.parent = playerT;
+            playerMesh.transform.localPosition = new Vector3(0f, -1f, 0f);
+            playerMesh.transform.localRotation = Quaternion.identity;
+            playerMesh.transform.localScale = Vector3.one;
+
+            return true;
         }
     }
 }
