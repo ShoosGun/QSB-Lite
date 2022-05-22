@@ -32,6 +32,14 @@ namespace SNet_Client.Utils
             return component.GetComponent<NetworkedEntity>();
         }
 
+        public static void SetLinearRotationCurve(this AnimationClip clip, string transformPath ,float initialTime, Quaternion initialRotation ,float finalTime, Quaternion finalRotation) 
+        {
+            clip.SetCurve(transformPath, typeof(Transform), "localRotation.w", AnimationCurve.Linear(initialTime, initialRotation.w,finalTime,finalRotation.w));
+            clip.SetCurve(transformPath, typeof(Transform), "localRotation.x", AnimationCurve.Linear(initialTime, initialRotation.x, finalTime, finalRotation.x));
+            clip.SetCurve(transformPath, typeof(Transform), "localRotation.y", AnimationCurve.Linear(initialTime, initialRotation.y, finalTime, finalRotation.y));
+            clip.SetCurve(transformPath, typeof(Transform), "localRotation.z", AnimationCurve.Linear(initialTime, initialRotation.z, finalTime, finalRotation.z));
+        }
+
         //Advindo de https://stackoverflow.com/questions/391621/compare-using-thread-sleep-and-timer-for-delayed-execution
         class TimerState
         {

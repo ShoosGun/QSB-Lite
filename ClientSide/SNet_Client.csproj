@@ -37,16 +37,16 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\..\..\..\..\OuterWilds Alpha 1_2\OuterWilds_Alpha_1_2_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\OuterWilds_Alpha_1_2_PC\OuterWilds_Alpha_1_2_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="BepInEx">
-      <HintPath>..\..\..\..\..\..\OuterWilds Alpha 1_2\BepInEx\core\BepInEx.dll</HintPath>
+      <HintPath>..\..\OuterWilds_Alpha_1_2_PC\BepInEx\core\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
-      <HintPath>..\..\..\..\..\..\OuterWilds Alpha 1_2\OuterWilds_Alpha_1_2_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>..\..\OuterWilds_Alpha_1_2_PC\OuterWilds_Alpha_1_2_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
