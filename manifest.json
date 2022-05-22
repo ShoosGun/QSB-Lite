@@ -1,0 +1,8 @@
+{
+	"filename": "SNet_Client.dll",
+	"author": "Locochoco",
+	"name": "Strange's Net",
+	"uniqueName": "Locochoco.SNET",
+	"version": "1.0.0",
+	"dependencies": ["Locochoco.CAMOWA"]
+}
