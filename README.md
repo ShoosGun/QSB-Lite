@@ -1,5 +1,5 @@
 # SNet
-This mod allows for multiple players to play together in dedicated server the alpha 1.2 from Outer Wilds.
+This mod allows for multiple players to play together in a dedicated server the alpha 1.2 from Outer Wilds.
 This is a continuation of the mod [Quantum-Space-Amigos(or QSA for short)](https://github.com/ShoosGun/Quantum-Space-Amigos) which was inspired by [QSB](https://github.com/misternebula/quantum-space-buddies). This continuation rewrote all the networking code from TCP to UDP, made the server code a separated executable and went from a server-client approach to a more peer-to-peer solution. These reasons are why this new repository was made.
 
 ### What is already done
