@@ -9,7 +9,7 @@ namespace SNet_Server
     class Program
     {
         static int PORT = 2121;
-        static int SERVER_TIME_STEP = 1000/60;
+        static int SERVER_TIME_STEP = 60;
         
         static void Main(string[] args)
         {
@@ -41,7 +41,7 @@ namespace SNet_Server
 
             bool areWeSupposedToLoop = true;
 
-            Util.RepeatDelayedAction(SERVER_TIME_STEP, SERVER_TIME_STEP, () =>
+            Util.RepeatDelayedAction(1000 / SERVER_TIME_STEP, 1000 / SERVER_TIME_STEP, () =>
             {
                 server.CheckReceivedData();
                 lock (shouldServerBeOn_LOCK) { return shouldServerBeOn; }
@@ -62,6 +62,10 @@ namespace SNet_Server
                             server.Stop();
                             areWeSupposedToLoop = false;
                             break;
+                        case ConsoleKey.C: //Crash Button
+                            throw new Exception("CRASH TEST");
+                        case ConsoleKey.R: //Return Button
+                            return;
                     }
                 }
             }

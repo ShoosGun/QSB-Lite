@@ -117,7 +117,6 @@ namespace SNet_Client.Sockets
                     Disconnection(null);
                     return;
                 }
-
                 byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
                 s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref serverEndpoint, ReceiveCallback, nextDatagramBuffer);
             }
@@ -156,7 +155,7 @@ namespace SNet_Client.Sockets
                 server.SetConnected(true);
                 OnConnection?.Invoke();
 
-                //Verificações com tempo de vida que ocorrem a cada
+                //Verificações com tempo de vida que ocorrem a cada DELTA_TIME_OF_VERIFICATION_LOOP
                 Util.RepeatDelayedAction(DELTA_TIME_OF_VERIFICATION_LOOP, DELTA_TIME_OF_VERIFICATION_LOOP, TimedVerificationsLoop);
             }
             //Usar aqui possiveis dados que vieram com o dgram

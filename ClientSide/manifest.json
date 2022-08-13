@@ -1,8 +1,8 @@
 {
-	"filename" : "ClientSide.dll",
+	"filename": "SNet_Client.dll",
 	"author": "Locochoco",
-	"name": "QSA-ClientSide",
-	"uniqueName": "Locochoco.QSA_CS",
-	"description": "Adds the hability to connect to servers created by QSA-ServerSide",	
-	"version": "0.5 - gamma",
+	"name": "Strange's Net",
+	"uniqueName": "Locochoco.SNET",
+	"version": "1.0.0",
+	"dependencies": [ "Locochoco.CAMOWA" ]
 }
