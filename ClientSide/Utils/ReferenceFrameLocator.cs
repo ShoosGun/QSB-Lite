@@ -33,7 +33,7 @@ namespace SNet_Client.Utils
             }
             return foundTheObject;
         }
-        public static void CacheAllReferenceFrame()
+        public static void CacheAllReferenceFrames()
         {
             foreach (var pair in referenceFrameObjectData)
             {

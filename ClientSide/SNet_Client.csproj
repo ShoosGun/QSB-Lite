@@ -48,8 +48,8 @@
     <Reference Include="Assembly-UnityScript-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\OuterWildsAlphaGameLibs.1.2.0\lib\Assembly-UnityScript-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="BepInEx, Version=5.4.19.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\BepInEx.BaseLib.5.4.19\lib\net35\BepInEx.dll</HintPath>
+    <Reference Include="BepInEx, Version=5.4.21.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\BepInEx.BaseLib.5.4.21\lib\net35\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="Boo.Lang, Version=2.0.9.5, Culture=neutral, PublicKeyToken=32c39770e9a21a67, processorArchitecture=MSIL">
       <HintPath>..\packages\OuterWildsAlphaGameLibs.1.2.0\lib\Boo.Lang.dll</HintPath>
@@ -76,6 +76,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClientMod.cs" />
+    <Compile Include="DiscordGameSDK\ActivityManager.cs" />
+    <Compile Include="DiscordGameSDK\Constants.cs" />
+    <Compile Include="DiscordGameSDK\Core.cs" />
+    <Compile Include="DiscordGameSDK\ImageManager.cs" />
+    <Compile Include="DiscordGameSDK\LobbyManager.cs" />
+    <Compile Include="DiscordGameSDK\StorageManager.cs" />
+    <Compile Include="DiscordGameSDK\StoreManager.cs" />
     <Compile Include="EntityCreators\Player\PlayerEntities.cs" />
     <Compile Include="EntityCreators\Player\PlayerItemStates.cs" />
     <Compile Include="EntityCreators\Player\PlayerLight.cs" />
@@ -101,6 +108,7 @@
     <Compile Include="SettingsMenu\ClientModSettingsMenu.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SettingsMenu\ClientModMenu.cs" />
+    <Compile Include="Sockets\ConnectedUser.cs" />
     <Compile Include="Sockets\Listener.cs" />
     <Compile Include="Sockets\Client.cs" />
     <Compile Include="Sockets\PacketReceiver.cs" />
@@ -119,6 +127,11 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="DiscordGameSDK\discord_game_sdk.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

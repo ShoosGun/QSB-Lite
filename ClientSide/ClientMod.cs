@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using BepInEx;
+using BepInEx.Logging;
 
 using SNet_Client.Sockets;
 using SNet_Client.Utils;
@@ -16,14 +17,17 @@ namespace SNet_Client
     public class ClientMod : BaseUnityPlugin
     {
         public Client _clientSide;
+        public static ManualLogSource LogSource;
 
         private void Start()
         {
+            LogSource = Logger;
+
             if (!Application.runInBackground)
                 Application.runInBackground = true;
 
             _clientSide = new Client();
-            
+
             //Network Specific Scripts
             gameObject.AddComponent<ServerInteraction>();
             gameObject.AddComponent<EntityInitializer>();
@@ -43,13 +47,15 @@ namespace SNet_Client
             //Atualizar quando achar que estiver em uma nova cena
             if (Time.timeSinceLevelLoad < Time.deltaTime * 2f)
             {
-                ReferenceFrameLocator.CacheAllReferenceFrame();
+                ReferenceFrameLocator.CacheAllReferenceFrames();
             }
+            _clientSide.ReceiveIncomingData();
         }
-
-                    string IP = "127.0.0.1";
+        
+        string IP = "127.0.0.1";
         public void OnGUI()
         {
+            //TODO adicionar UI para abrir servidor
             if (!_clientSide.Connected)
             {
                 IP = GUI.PasswordField(new Rect(10, 10, 150, 25), IP, "*"[0]);
@@ -62,9 +68,9 @@ namespace SNet_Client
                     _clientSide.Disconnect();
             }
         }
-        private void FixedUpdate()
+        private void LateUpdate()//TODO ver se é possivel mudar para FixedUpdate ou algo assim, e qual é melhor
         {
-            _clientSide.Update();
+            _clientSide.FlushData();
         }
         private void OnDestroy()
         {
