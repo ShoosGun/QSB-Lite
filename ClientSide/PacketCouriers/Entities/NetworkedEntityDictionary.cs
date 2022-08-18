@@ -16,8 +16,12 @@ namespace SNet_Client.PacketCouriers.Entities
             }
             return false;
         }
+        public NetworkedEntity[] ToArray() 
+        {
+            return (NetworkedEntity[])Dictionary.Values;
+        }
     }
-    public class NetworkedEntityOwnerDictionary : Dictionary<int, NetworkedEntityDictionary>
+    public class NetworkedEntityOwnerDictionary : Dictionary<long, NetworkedEntityDictionary>
     {
 
         public int GetTotalEntityCount()
@@ -28,11 +32,15 @@ namespace SNet_Client.PacketCouriers.Entities
             return count;
         }  
 
-        public NetworkedEntity GetNetworkedEntity(int ownerID, int id)
+        public NetworkedEntity GetNetworkedEntity(long ownerID, int id)
         {
             return this[ownerID][id];
         }
-        public bool TryGetNetworkedEntity(int ownerID, int id, out NetworkedEntity entity)
+        public NetworkedEntity[] GetNetworkedEntities(long ownerID) 
+        {
+            return this[ownerID].ToArray();
+        }
+        public bool TryGetNetworkedEntity(long ownerID, int id, out NetworkedEntity entity)
         {
             if(TryGetValue(ownerID, out NetworkedEntityDictionary dict))
                 return dict.TryGetValue(id, out entity);
@@ -70,7 +78,7 @@ namespace SNet_Client.PacketCouriers.Entities
             Clear();
         }
 
-        public void RemoveAndDestroyOwnerIDEntites(int ownerID)
+        public void RemoveAndDestroyOwnerIDEntites(long ownerID)
         {
             if (!TryGetValue(ownerID, out var entities))
                 return;

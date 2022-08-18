@@ -1,7 +1,6 @@
 ﻿using SNet_Client.Utils;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace SNet_Client.Sockets
 {    
@@ -45,11 +44,13 @@ namespace SNet_Client.Sockets
     }
     public struct ReceivedPacketData
     {
+        public readonly long SendingId;
         public readonly DateTime SentTime;
         public readonly int Latency;
 
-        public ReceivedPacketData(DateTime SentTime, int Latency)
+        public ReceivedPacketData(long SendingId, DateTime SentTime, int Latency)
         {
+            this.SendingId = SendingId;
             this.SentTime = SentTime;
             this.Latency = Latency;
         }

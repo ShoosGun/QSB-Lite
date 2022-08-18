@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using Discord;
 
 using SNet_Client.Utils;
 
@@ -9,306 +11,194 @@ namespace SNet_Client.Sockets
 {
     public class Listener
     {
-        private Server server;
-        private int maxWaitingTimeForTimeoutOfTheServer = 4000;
-        private const int TIME_FOR_TIMEOUT_OF_SERVER_MULTIPLIER = 2;
+        private Discord.Discord discord;
+        private NetworkManager networkManager;
+        private LobbyManager lobbyManager;
+        private UserManager userManager;
 
-        private const int MAX_WAITING_TIME_FOR_VERIFICATION = 2000;
-        private const int DELTA_TIME_OF_VERIFICATION_LOOP = 1000;
+        private const long APPLICATION_ID = 1008107594516283493;
+        private const long CLIENT_ID = 1008107594516283493;
 
-        private SNETConcurrentDictionary<int, ReliablePacket> ReliablePackets;
 
-        private Socket s;
-        private const int DATAGRAM_MAX_SIZE = 1284;
+        public long currentlyConnectedLobby { get; private set; }
+        public User currentUser { get; private set; }
+
+        private SNETConcurrentDictionary<long, ConnectedUser> ConnectedUsers;
+        private SNETConcurrentDictionary<ulong, long> ConnectedUsersPeerIdTable;
 
         public Listener()
         {
-            ReliablePackets = new SNETConcurrentDictionary<int, ReliablePacket>();
-            server = new Server();
-        }
-
-        /// <summary>
-        /// Disconected any prior connection before attempting to connect, the attempts happen in another thread
-        /// </summary>
-        /// <param name="IP"></param>
-        public void TryConnect(string IP, int port)
-        {
-            if (server.GetConnecting() || server.GetConnected())
-                return;
-
-            server.SetConnecting(true);
-
-
-            s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            s.Bind(new IPEndPoint(IPAddress.Any, 0));
-
-            EndPoint serverEndpoint = new IPEndPoint(IPAddress.Parse(IP), port);
-            server.SetServerEndPoint(serverEndpoint);
-
-            s.Connect(serverEndpoint);
-            byte[] connectionRequestBuffer = BitConverter.GetBytes((byte)PacketTypes.CONNECTION);
-            s.SendTo(connectionRequestBuffer, serverEndpoint);
-
-            UnityEngine.Debug.Log(string.Format("Tentando Conectar em: {0}:{1}", IP, port));
-
-            Util.DelayedAction(MAX_WAITING_TIME_FOR_VERIFICATION, () =>
+            var clientID = Environment.GetEnvironmentVariable("DISCORD_CLIENT_ID");
+            if (clientID == null)
             {
-                if (!server.GetConnected())
+                clientID = "418559331265675294";
+            }
+            //discord = new Discord.Discord(Int64.Parse(clientID), (UInt64)Discord.CreateFlags.Default);
+            discord = new Discord.Discord(CLIENT_ID, (UInt64)Discord.CreateFlags.Default);
+            networkManager = discord.GetNetworkManager();
+            lobbyManager = discord.GetLobbyManager();
+            userManager = discord.GetUserManager();
+
+            ConnectedUsers = new SNETConcurrentDictionary<long, ConnectedUser>();
+            ConnectedUsersPeerIdTable = new SNETConcurrentDictionary<ulong, long>();
+
+            SetDiscordEvents();
+        }
+        private void SetDiscordEvents()
+        {
+            //Adds our route uptade
+            networkManager.OnRouteUpdate += route =>
+            {
+                var txn = lobbyManager.GetMemberUpdateTransaction(currentlyConnectedLobby, currentUser.Id);
+                txn.SetMetadata("route", route);
+                lobbyManager.UpdateMember(currentlyConnectedLobby, currentUser.Id, txn, (result =>
                 {
-                    server.SetConnecting(false);
-                    s.Close();
-                    OnFailConnection?.Invoke();
+                    ClientMod.LogSource.LogWarning("Updated member route with result " + result);
+                }));
+            };
+
+            lobbyManager.OnMemberDisconnect += (lobbyId, userId) =>
+            {
+                if (ConnectedUsers.TryGetValue(userId, out ConnectedUser user))
+                {
+                    ConnectedUsers.Remove(userId);
+                    ConnectedUsersPeerIdTable.Remove(user.PeerId);
                 }
+            };
+            //Receives the new route from connected user and updates accordenly
+            lobbyManager.OnMemberUpdate += (lobbyId, userId) =>
+            {
+                var rawPeerId = lobbyManager.GetMemberMetadataValue(lobbyId, userId, "peer_id");
+                var peerId = Convert.ToUInt64(rawPeerId);
+                var newRoute = lobbyManager.GetMemberMetadataValue(lobbyId, userId, "route");
+                networkManager.UpdatePeer(peerId, newRoute);
+
+                if (!ConnectedUsers.ContainsKey(userId))
+                {
+                    ConnectedUsers.Add(userId,
+                        new ConnectedUser() { User = lobbyManager.GetMemberUser(lobbyId, userId), PeerId = peerId });
+                    OnMemberConnect?.Invoke(userId);
+                    ConnectedUsersPeerIdTable.Add(peerId, userId);
+                }
+            };
+            networkManager.OnMessage += (peerId, channel, data) =>
+            {
+                if (ConnectedUsersPeerIdTable.TryGetValue(peerId, out long userId))
+                {
+                    OnReceiveData?.Invoke(userId, data);
+                }
+            };
+
+        }
+        private void WhenConnectedToLobby(ref Lobby lobby)
+        {
+            currentlyConnectedLobby = lobby.Id;
+
+            var localPeerId = Convert.ToString(networkManager.GetPeerId());
+            var txn = lobbyManager.GetMemberUpdateTransaction(lobby.Id, currentUser.Id);
+            txn.SetMetadata("peer_id", localPeerId);
+            lobbyManager.UpdateMember(lobby.Id, currentUser.Id, txn, (result) =>
+            {
+                ClientMod.LogSource.LogWarning("Updated member peer id with result " + result);
             });
 
-            byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
-            s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref serverEndpoint, ReceiveCallback, nextDatagramBuffer);
-        }
-        private void ReceiveCallback(IAsyncResult ar)
-        {
-            EndPoint sender = new IPEndPoint(IPAddress.Any, 0);
-            EndPoint serverEndpoint = server.GetServerEndPoint();
-            try
+            //Get all clients already connected to the lobby
+            var members = lobbyManager.GetMemberUsers(lobby.Id);
+            foreach (var member in members)
             {
-                byte[] datagramBuffer = (byte[])ar.AsyncState;
-                int datagramSize = s.EndReceiveFrom(ar, ref sender);
+                long userId = member.Id;
+                string rawPeerId = lobbyManager.GetMemberMetadataValue(lobby.Id, userId, "peer_id");
+                ulong userPeerId = Convert.ToUInt64(rawPeerId);
+                string route = lobbyManager.GetMemberMetadataValue(lobby.Id, userId, "route");
 
-                PacketTypes packetType = (PacketTypes)datagramBuffer[0];
-                
-                if (datagramSize > 0)
-                {
-                    switch ((PacketTypes)datagramBuffer[0])
-                    {
-                        case PacketTypes.PING:
-                            ReceivePing(datagramBuffer, (IPEndPoint)sender);
-                            break;
-                        case PacketTypes.PONG:
-                            ReceivePong(datagramBuffer, (IPEndPoint)sender);
-                            break;
+                networkManager.OpenPeer(userPeerId, route);
+                networkManager.OpenChannel(userPeerId, 0, false);// Not realiable
+                networkManager.OpenChannel(userPeerId, 1, true); // Realiable
 
-
-                        case PacketTypes.CONNECTION:
-                            Connection(datagramBuffer);
-                            break;
-                        case PacketTypes.PACKET:
-                            Receive(datagramBuffer);
-                            break;
-                        case PacketTypes.RELIABLE_RECEIVED:
-                            ReceiveReliable_Receive(datagramBuffer);
-                            break;
-                        case PacketTypes.RELIABLE_SEND:
-                            ReceiveReliable_Send(datagramBuffer);
-                            break;
-                        case PacketTypes.DISCONNECTION:
-                            Disconnection(datagramBuffer);
-                            break;
-                    }
-                }
-
-                server.SetTimeOfLastReceivedMessage(DateTime.UtcNow);
-
-                byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
-                s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref serverEndpoint, ReceiveCallback, nextDatagramBuffer);
+                ConnectedUsers.Add(userId, new ConnectedUser() { User = member, PeerId = userPeerId });
+                ConnectedUsersPeerIdTable.Add(userPeerId, userId);
+                OnMemberConnect?.Invoke(userId);
             }
-            catch (Exception ex)
+            OnConnection?.Invoke();
+        }
+        public void TryCreatingLobby(uint capacity = 5)
+        {
+            var txn = lobbyManager.GetLobbyCreateTransaction();
+            txn.SetCapacity(capacity);
+            txn.SetType(LobbyType.Private);
+
+            lobbyManager.CreateLobby(txn, (Result result, ref Lobby lobby) =>
             {
-                if (ex.GetType() == typeof(SocketException))
+                if (result != Result.Ok)
                 {
-                    Disconnection(null);
+                    OnFailConnection?.Invoke();
                     return;
                 }
-                byte[] nextDatagramBuffer = new byte[DATAGRAM_MAX_SIZE];
-                s.BeginReceiveFrom(nextDatagramBuffer, 0, nextDatagramBuffer.Length, SocketFlags.None, ref serverEndpoint, ReceiveCallback, nextDatagramBuffer);
+                var secret = lobbyManager.GetLobbyActivitySecret(lobby.Id);
+                ClientMod.LogSource.LogInfo("Secret: " + secret);
+                WhenConnectedToLobby(ref lobby);
+            });
+        } 
+        public void TryConnect(string activitySecret)
+        {
+            lobbyManager.ConnectLobbyWithActivitySecret(activitySecret, (Result result, ref Lobby lobby) =>
+            {
+                if(result != Result.Ok) 
+                {
+                    OnFailConnection?.Invoke();
+                    return;
+                }
+                WhenConnectedToLobby(ref lobby);
+            });
+        }
+        public void FlushAllMessages() 
+        {
+            networkManager.Flush();
+        }
+        public void CheckForDiscordInformation() 
+        {
+            discord.RunCallbacks();
+        }
+
+        public void SendToAllCients(byte[] data, bool reliable) 
+        {
+            int channel = reliable ? 1 : 0; 
+            foreach (var user in ConnectedUsers) 
+            {                
+                networkManager.SendMessage(user.Value.PeerId, (byte)channel, data);
             }
         }
-
-        private bool TimedVerificationsLoop()
+        public bool Send(byte[] data, long receivingId,bool reliable)
         {
-            int deltaTime = (int)(DateTime.UtcNow - server.GetTimeOfLastReceivedMessage()).TotalMilliseconds;
-            
-            if (server.GetConnected())
+            if (ConnectedUsers.TryGetValue(receivingId, out var user))
             {
-                //Enviar ao servidor perguntando se está conectado
-                if (deltaTime > maxWaitingTimeForTimeoutOfTheServer * TIME_FOR_TIMEOUT_OF_SERVER_MULTIPLIER / 2)
-                    Ping((IPEndPoint)server.GetServerEndPoint());
-                //Se tiver esse delay então sabemos que deu timeout
-                else if (deltaTime > maxWaitingTimeForTimeoutOfTheServer * TIME_FOR_TIMEOUT_OF_SERVER_MULTIPLIER)
-                    Disconnect();
-            }
-            //Enviar os pacotes reliable
-            foreach (var packet in ReliablePackets)
-                SendReliable(packet.Value);
-
-            return server.GetConnected(); //Vai parar esse loop se estivermos desconectados do servidor
-        }
-
-        //Cliente -> Servidor -> Cliente -> Servidor
-        private void Connection(byte[] dgram)
-        {
-            //Recebemos a confirmação que estamos conectados, portanto a verificação foi um sucesso
-            if (!server.GetConnected())
-            {
-                //O timeout que o server nos da caso não mandemos mensagens por um periodo
-                maxWaitingTimeForTimeoutOfTheServer = BitConverter.ToInt32(dgram, 1);
-
-                server.SetConnecting(false);
-                server.SetConnected(true);
-                OnConnection?.Invoke();
-
-                //Verificações com tempo de vida que ocorrem a cada DELTA_TIME_OF_VERIFICATION_LOOP
-                Util.RepeatDelayedAction(DELTA_TIME_OF_VERIFICATION_LOOP, DELTA_TIME_OF_VERIFICATION_LOOP, TimedVerificationsLoop);
-            }
-            //Usar aqui possiveis dados que vieram com o dgram
-        }
-
-        //Cliente -> Servidor -> Cliente
-        private void Disconnection(byte[] dgram)
-        {
-            //Usar aqui possiveis dados que vieram com o dgram
-            s.Close();
-            OnDisconnection?.Invoke();
-
-            server.SetConnected(false);
-            server.SetConnecting(false);
-        }
-
-        private void Receive(byte[] dgram)
-        {
-            byte[] treatedDGram = new byte[dgram.Length - 1];
-            Array.Copy(dgram, 1, treatedDGram, 0, treatedDGram.Length);
-            OnReceiveData?.Invoke(treatedDGram);
-        }
-
-        private void ReceiveReliable_Send(byte[] dgram)
-        {
-            //Resposta de que recebemos o pacote reliable
-            byte[] awnserBuffer = new byte[5];
-            awnserBuffer[0] = (byte)PacketTypes.RELIABLE_RECEIVED; //Header de ter recebido
-            Array.Copy(dgram, 1, awnserBuffer, 1, 4); //ID da mensagem recebida
-            s.SendTo(awnserBuffer, server.GetServerEndPoint());
-            // --
-
-            byte[] treatedDGram = new byte[dgram.Length - 5];
-            Array.Copy(dgram, 5, treatedDGram, 0, treatedDGram.Length);
-            OnReceiveData?.Invoke(treatedDGram);
-        }
-
-        private void ReceiveReliable_Receive(byte[] dgram)
-        {
-            int packeID = BitConverter.ToInt32(dgram, 1);
-            ReliablePackets.Remove(packeID);
-        }
-
-        public bool Send(byte[] dgram)
-        {
-            if (server.GetConnected() && dgram.Length < DATAGRAM_MAX_SIZE)
-            {
-                //Adicionar o header PACKET na frente da mensagem
-                byte[] dataGramToSend = new byte[dgram.Length + 1];
-                dataGramToSend[0] = (byte)PacketTypes.PACKET;
-                Array.Copy(dgram, 0, dataGramToSend, 1, dgram.Length);
-                s.SendTo(dataGramToSend, server.GetServerEndPoint());
+                int channel = reliable ? 1 : 0;
+                networkManager.SendMessage(user.PeerId, (byte)channel, data);
                 return true;
             }
             return false;
-        }
-
-        private int NextGeneratedID = int.MinValue;
-        private ReliablePacket CreateReliablePacket(byte[] packet)
-        {
-            int packetID = NextGeneratedID;
-
-            if (NextGeneratedID == int.MaxValue)
-                NextGeneratedID = int.MinValue;
-            else
-                NextGeneratedID += 1;
-
-            return new ReliablePacket(packetID, packet);
-        }
-
-        public bool SendReliable(byte[] dgram)
-        {
-            if (server.GetConnected() && dgram.Length < DATAGRAM_MAX_SIZE)
-            {
-                ReliablePacket reliablePacket = CreateReliablePacket(dgram);
-                ReliablePackets.Add(reliablePacket.PacketID, reliablePacket);
-
-                SendReliable(reliablePacket);
-                return true;
-            }
-            return false;
-        }
-
-        //Client -> Server -> Client
-        private void SendReliable(ReliablePacket packet)
-        {
-            byte[] dataGramToSend = new byte[packet.Data.Length + 1 + 4];
-            dataGramToSend[0] = (byte)PacketTypes.RELIABLE_SEND; // Header
-            Array.Copy(BitConverter.GetBytes(packet.PacketID), 0, dataGramToSend, 1, 4); // Packet ID para reliable packet
-
-            Array.Copy(packet.Data, 0, dataGramToSend, 5, packet.Data.Length);
-            s.SendTo(dataGramToSend, server.GetServerEndPoint());
-        }
-        private void Ping(IPEndPoint receiver)
-        {
-            byte[] dataGramToSend = new byte[1 + 8];
-            dataGramToSend[0] = (byte)PacketTypes.PING; // Header
-            Array.Copy(BitConverter.GetBytes(DateTime.UtcNow.ToBinary()), 0, dataGramToSend, 1, 8); // Tempo em que enviou o ping
-
-            s.SendTo(dataGramToSend, receiver);
-        }
-
-        private void Pong(IPEndPoint receiver, DateTime pingSendTime)
-        {
-            byte[] dataGramToSend = new byte[1 + 8 + 8];
-            dataGramToSend[0] = (byte)PacketTypes.PONG; // Header
-            Array.Copy(BitConverter.GetBytes(DateTime.UtcNow.ToBinary()), 0, dataGramToSend, 1, 8); // Tempo em que enviou o pong
-            Array.Copy(BitConverter.GetBytes(pingSendTime.ToBinary()), 0, dataGramToSend, 9, 8); // Tempo em que o outro enviou o ping
-
-            s.SendTo(dataGramToSend, receiver);
-        }
-        private void ReceivePing(byte[] dgram, IPEndPoint sender)
-        {
-            DateTime pingSendTime = DateTime.FromBinary(BitConverter.ToInt64(dgram, 1));
-            Pong(sender, pingSendTime);// Send the Pong to whoever pinged
-        }
-        private void ReceivePong(byte[] dgram, IPEndPoint sender)
-        {
-            DateTime pongSendTime = DateTime.FromBinary(BitConverter.ToInt64(dgram, 1));
-            DateTime pingSendTime = DateTime.FromBinary(BitConverter.ToInt64(dgram, 9));
         }
 
         public void Disconnect()
         {
-            if (!server.GetConnected())
-                return;
-            server.SetConnected(false);
+            lobbyManager.DisconnectLobby(currentlyConnectedLobby, (result) =>
+            {
+                OnDisconnection?.Invoke();
 
-            byte[] disconnectionBuffer = BitConverter.GetBytes((byte)PacketTypes.DISCONNECTION);
-            s.SendTo(disconnectionBuffer, server.GetServerEndPoint());
-
-            OnDisconnection?.Invoke();
-            s.Close();
-
-            ReliablePackets.Clear();
+                ConnectedUsersPeerIdTable.Clear();
+                ConnectedUsers.Clear();
+            });
         }
         
-        public delegate void ReceivedData(byte[] dgram);
+        public delegate void ReceivedData(long sendingPeer, byte[] data);
+        public delegate void MemberUpdate(long userId);
 
         public event Action OnConnection;
         public event Action OnFailConnection;
         public event Action OnDisconnection;
         public event ReceivedData OnReceiveData;
-    }
-    enum PacketTypes : byte
-    {
-        PING,
-        PONG,
 
-        CONNECTION,
-        PACKET,
-        DISCONNECTION,
-        RELIABLE_SEND,
-        RELIABLE_RECEIVED,
+        public event MemberUpdate OnMemberConnect;
+        public event MemberUpdate OnMemberDisconnect;
     }
 }

@@ -17,8 +17,8 @@ namespace SNet_Client.EntityCreators.Probe
         public void Start()
         {
             EntityInitializer.client_EntityInitializer.AddGameObjectPrefab("ProbeEntity", CreateProbeEntity);
-            ServerInteraction.OnReceiveOwnerID += ServerInteraction_OnReceiveOwnerID;
-            Client.GetClient().Disconnection += PlayerEntities_Disconnection;
+            Client.GetClient().Connection += OnConnection;
+            Client.GetClient().Disconnection += OnDisconnection;
 
             GlobalMessenger<OWRigidbody>.AddListener("LaunchProbe", OnLaunchProbe);
         }
@@ -33,11 +33,11 @@ namespace SNet_Client.EntityCreators.Probe
                 SpawnProbe(probeBody);
         }
 
-        private void ServerInteraction_OnReceiveOwnerID()
+        private void OnConnection()
         {
             weHavePlayerID = true;
         }
-        private void PlayerEntities_Disconnection()
+        private void OnDisconnection()
         {
             weHavePlayerID = false;
         }
@@ -46,10 +46,10 @@ namespace SNet_Client.EntityCreators.Probe
         private void SpawnProbe(OWRigidbody probeBody)
         {
             currentProbeBody = probeBody;
-            EntityInitializer.client_EntityInitializer.InstantiateEntity("ProbeEntity", probeBody.transform.position, probeBody.transform.rotation, EntityInitializer.InstantiateType.Buffered);
+            EntityInitializer.client_EntityInitializer.InstantiateEntity("ProbeEntity", probeBody.transform.position, probeBody.transform.rotation);
         }
 
-        public NetworkedEntity CreateProbeEntity(Vector3 position, Quaternion rotation, int ownerID, object[] InitializationData)
+        public NetworkedEntity CreateProbeEntity(Vector3 position, Quaternion rotation, long ownerID, object[] InitializationData)
         {
             GameObject go = new GameObject("probe_networked_entity")
             {
@@ -63,7 +63,7 @@ namespace SNet_Client.EntityCreators.Probe
             bool createMesh = true;
             bool createNormalMesh = true;
 
-            if (ownerID == ServerInteraction.GetOwnerID())
+            if (ownerID == Client.GetClient().GetUserId())
             {
                 go.transform.parent = currentProbeBody.transform;
                 go.transform.localPosition = Vector3.zero;
@@ -93,7 +93,7 @@ namespace SNet_Client.EntityCreators.Probe
 
             go.AddComponent<ProbeStatesSync>();
 
-            if (ownerID != ServerInteraction.GetOwnerID())
+            if (ownerID != Client.GetClient().GetUserId())
             {
                 go.AddComponent<ProbeLightsAndSound>();
             }

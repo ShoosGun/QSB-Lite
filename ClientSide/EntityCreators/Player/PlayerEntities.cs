@@ -16,12 +16,17 @@ namespace SNet_Client.EntityCreators.Player
         public void Start()
         {
             EntityInitializer.client_EntityInitializer.AddGameObjectPrefab("PlayerEntity", CreatePlayerEntity);
-            ServerInteraction.OnReceiveOwnerID += ServerInteraction_OnReceiveOwnerID;
-            Client.GetClient().Disconnection += PlayerEntities_Disconnection;
+            Client.GetClient().Connection += OnConnection;
+            Client.GetClient().Disconnection += OnDisconnection;
 
             GlobalMessenger<DeathType>.AddListener("PlayerDeath", OnPlayerDeath);
             GlobalMessenger<int>.AddListener("StartOfTimeLoop", OnStartOfTimeLoop);
             GlobalMessenger.AddListener("ResumeSimulation", OnResumeSimulation);
+        }
+
+        private void PlayerEntities_Connection()
+        {
+            throw new System.NotImplementedException();
         }
 
         public void OnDestroy()
@@ -32,8 +37,7 @@ namespace SNet_Client.EntityCreators.Player
         }
         private void OnStartOfTimeLoop(int loop)
         {
-            EntityInitializer.client_EntityInitializer.RequestRefreshOfEntities();
-
+            //EntityInitializer.client_EntityInitializer.RequestRefreshOfEntities();//TODO Reimplementar isso aqui, oops
             if (!hasSpawnedPlayer && weHavePlayerID)
                 SpawnPlayer();
         }
@@ -46,13 +50,13 @@ namespace SNet_Client.EntityCreators.Player
         {
             hasSpawnedPlayer = false;
         }
-        private void ServerInteraction_OnReceiveOwnerID()
+        private void OnConnection()
         {
             weHavePlayerID = true;
             if (!hasSpawnedPlayer)
                 SpawnPlayer();
         }
-        private void PlayerEntities_Disconnection()
+        private void OnDisconnection()
         {
             weHavePlayerID = false;
             hasSpawnedPlayer = false;
@@ -62,12 +66,12 @@ namespace SNet_Client.EntityCreators.Player
         {
             Transform playerTransf = Locator.GetPlayerTransform();
             if (playerTransf != null)
-                EntityInitializer.client_EntityInitializer.InstantiateEntity("PlayerEntity", playerTransf.position, playerTransf.rotation, EntityInitializer.InstantiateType.Buffered);
+                EntityInitializer.client_EntityInitializer.InstantiateEntity("PlayerEntity", playerTransf.position, playerTransf.rotation);
 
             hasSpawnedPlayer = true;
         }
 
-        public NetworkedEntity CreatePlayerEntity(Vector3 position, Quaternion rotation, int ownerID, object[] InitializationData)
+        public NetworkedEntity CreatePlayerEntity(Vector3 position, Quaternion rotation, long ownerID, object[] InitializationData)
         {
             GameObject go = new GameObject("player_networked_entity")
             {
@@ -88,7 +92,7 @@ namespace SNet_Client.EntityCreators.Player
 
             bool createMesh = true;
 
-            if (ownerID == ServerInteraction.GetOwnerID())
+            if (ownerID == Client.GetClient().GetUserId())
             {
                 go.transform.parent = Locator.GetPlayerTransform();
                 go.transform.localPosition = Vector3.zero;
@@ -117,7 +121,7 @@ namespace SNet_Client.EntityCreators.Player
             
             go.AddComponent<PlayerItemStates>();
             
-            if (ownerID != ServerInteraction.GetOwnerID())
+            if (ownerID != Client.GetClient().GetUserId())
             {
                 go.AddComponent<PlayerLight>();
             }

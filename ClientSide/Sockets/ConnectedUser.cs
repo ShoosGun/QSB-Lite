@@ -5,7 +5,6 @@ namespace SNet_Client.Sockets
     public class ConnectedUser
     {
         public User User;
-        public ulong PeerId;
-        public string Route;
+        public ulong PeerId = ulong.MaxValue;
     }
 }

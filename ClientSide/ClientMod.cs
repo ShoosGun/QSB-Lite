@@ -6,7 +6,6 @@ using SNet_Client.Sockets;
 using SNet_Client.Utils;
 
 using SNet_Client.PacketCouriers.Entities;
-using SNet_Client.PacketCouriers;
 
 using SNet_Client.EntityCreators.Player;
 using SNet_Client.EntityCreators.Probe;
@@ -29,7 +28,6 @@ namespace SNet_Client
             _clientSide = new Client();
 
             //Network Specific Scripts
-            gameObject.AddComponent<ServerInteraction>();
             gameObject.AddComponent<EntityInitializer>();
 
             //Game Specific Scripts
@@ -49,28 +47,30 @@ namespace SNet_Client
             {
                 ReferenceFrameLocator.CacheAllReferenceFrames();
             }
-            _clientSide.ReceiveIncomingData();
+            _clientSide.Update();
+        }
+        private void LateUpdate() 
+        {
+            _clientSide.LateUpdate();
         }
         
-        string IP = "127.0.0.1";
+        string ActivitySecrete = "";
         public void OnGUI()
         {
             //TODO adicionar UI para abrir servidor
             if (!_clientSide.Connected)
             {
-                IP = GUI.PasswordField(new Rect(10, 10, 150, 25), IP, "*"[0]);
-                if (GUI.Button(new Rect(10, 35, 150, 25), "Conectar para esse IP"))
-                    _clientSide.Connect(IP, 2121);
+                ActivitySecrete = GUI.TextField(new Rect(10, 10, 150, 25), ActivitySecrete);
+                if (GUI.Button(new Rect(10, 35, 150, 25), "Connect to Lobby") && !_clientSide.Connecting)
+                    _clientSide.ConnectToLobby(ActivitySecrete);
+                if (GUI.Button(new Rect(10, 55, 150, 25), "Open Lobby") && !_clientSide.Connecting)
+                    _clientSide.OpenLobby();
             }
             else
             {
                 if (GUI.Button(new Rect(10, 10, 150, 25), "Desconectar"))
                     _clientSide.Disconnect();
             }
-        }
-        private void LateUpdate()//TODO ver se é possivel mudar para FixedUpdate ou algo assim, e qual é melhor
-        {
-            _clientSide.FlushData();
         }
         private void OnDestroy()
         {

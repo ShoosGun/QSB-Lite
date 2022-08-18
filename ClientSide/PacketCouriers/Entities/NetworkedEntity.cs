@@ -11,7 +11,9 @@ namespace SNet_Client.PacketCouriers.Entities
         public Dictionary<int, EntityScriptBehaviour> ComponentsToIO = new Dictionary<int, EntityScriptBehaviour>();
 
         public int id;
-        public int ownerId;
+        public long ownerId;
+        public string prefabName;
+        public object[] initializationData;
 
         private void Awake()
         {
@@ -19,7 +21,7 @@ namespace SNet_Client.PacketCouriers.Entities
                 SetEntityScript(script);
         }
 
-        public bool IsOurs() => ServerInteraction.GetOwnerID() == ownerId;
+        public bool IsOurs() => Client.GetClient().GetUserId() == ownerId;
         
         public T AddEntityScript<T>() where T : EntityScriptBehaviour
         {
