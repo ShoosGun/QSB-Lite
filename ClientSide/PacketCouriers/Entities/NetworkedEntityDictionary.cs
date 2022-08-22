@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SNet_Client.PacketCouriers.Entities
 {
@@ -18,7 +19,7 @@ namespace SNet_Client.PacketCouriers.Entities
         }
         public NetworkedEntity[] ToArray() 
         {
-            return (NetworkedEntity[])Dictionary.Values;
+            return Dictionary.Values.ToArray();
         }
     }
     public class NetworkedEntityOwnerDictionary : Dictionary<long, NetworkedEntityDictionary>
@@ -47,6 +48,15 @@ namespace SNet_Client.PacketCouriers.Entities
 
             entity = null;
             return false;
+        }
+        public bool TryGetNetworkedEntities(long ownerID, out NetworkedEntity[] entities)
+        {
+            entities = new NetworkedEntity[0];
+            if (!TryGetValue(ownerID, out NetworkedEntityDictionary dict))
+                return false;
+            
+            entities = dict.ToArray();
+            return true;
         }
 
         public bool ContainsEntity(NetworkedEntity networkedEntity)

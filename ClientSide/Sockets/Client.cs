@@ -11,24 +11,7 @@ namespace SNet_Client.Sockets
         public bool Connected { private set; get; }
         public bool Connecting { get; private set; }
 
-        public long GetUserId() => l.currentUser.Id;
-
-        private SNETConcurrentQueue<QueuedData> receivedData = new SNETConcurrentQueue<QueuedData>();
-        private SNETConcurrentQueue<ConnectedMemberStatus> receivedMemberStatus = new SNETConcurrentQueue<ConnectedMemberStatus>();
-        private const int MAX_PACKETS_TO_LOOK_EACH_LOOP = 30;
-        private const int MAX_WAITING_TIME_TO_READ_PACKET = 10;
-
-        private struct QueuedData
-        {
-            public byte[] data;
-            public long sendingId;
-        }
-        private struct ConnectedMemberStatus
-        {
-            public long memberId;
-            public bool connectionStatus; //0 - Disconnected, 1 - Connected
-        }
-
+        public long GetUserId() => l.CurrentUser.Id;
         public PacketReceiver packetReceiver { get; private set; }
 
         private static Client CurrentClient = null;
@@ -37,7 +20,7 @@ namespace SNet_Client.Sockets
             return CurrentClient;
         }
 
-        public Client()
+        public Client(bool useCanary = false)
         {
             if (CurrentClient != null)
                 return;
@@ -48,32 +31,37 @@ namespace SNet_Client.Sockets
             Connected = false;
             Connecting = false;
 
-            l = new Listener();
+            l = new Listener(useCanary?"1":"0");
             l.OnConnection += (() =>
             {
                 Connecting = false;
                 Connected = true;
+                ClientMod.LogSource.LogInfo("Connected!");
             });
             l.OnFailConnection += (() =>
             {
                 Connecting = false;
                 Connected = false;
+                ClientMod.LogSource.LogError("Connection Failed");
             });
             l.OnDisconnection += (() =>
             {
                 Connected = false;
+                ClientMod.LogSource.LogWarning("Disconnected");
             });
             l.OnReceiveData += ((sendingId, data) =>
             {
-                receivedData.Enqueue(new QueuedData() { data = data, sendingId = sendingId });
+                ReceiveData(data, sendingId);
             });
             l.OnMemberConnect += (userId =>
             {
-                receivedMemberStatus.Enqueue(new ConnectedMemberStatus() { connectionStatus = true, memberId = userId });
+                MemberConnection?.Invoke(userId);
+                ClientMod.LogSource.LogInfo($"Client {userId} on lobby !");
             });
             l.OnMemberDisconnect += (userId =>
             {
-                receivedMemberStatus.Enqueue(new ConnectedMemberStatus() { connectionStatus = false, memberId = userId });
+                MemberDisconnection?.Invoke(userId);
+                ClientMod.LogSource.LogInfo($"Client disconnected from lobby: {userId}");
             });
         }
 
@@ -106,8 +94,6 @@ namespace SNet_Client.Sockets
                     wasConnected = true;
                     Connection?.Invoke();
                 }
-                ReadNewMemberStatus();
-                ReadReceivedPackets();
             }
             else if (wasConnected)
             {
@@ -120,31 +106,6 @@ namespace SNet_Client.Sockets
         {
             l.FlushAllMessages();
         }
-        private void ReadReceivedPackets() 
-        {
-            int amountOfPacketDequeued = 0;
-            while (receivedData.TryDequeue(out QueuedData data, MAX_WAITING_TIME_TO_READ_PACKET) && amountOfPacketDequeued < MAX_PACKETS_TO_LOOK_EACH_LOOP)
-            {
-                ReceiveData(data);
-                amountOfPacketDequeued++;
-            }
-        }
-        private void ReadNewMemberStatus()
-        {
-            //What if there are both the connection and disconnection messages? welp, who knows!
-            //making it so connection messges happen before could fix this, but let's ignore it for now
-            while (receivedMemberStatus.TryDequeue(out ConnectedMemberStatus memberStatus, MAX_WAITING_TIME_TO_READ_PACKET))
-            {
-                if (memberStatus.connectionStatus)
-                {
-                    MemberConnection?.Invoke(memberStatus.memberId);
-                }
-                else
-                {
-                    MemberDisconnection?.Invoke(memberStatus.memberId);
-                }
-            }
-        }
         private byte[] MakeDataWithHeader(byte[] data, int header)
         {
             byte[] dataWithHeader = new byte[4 + 8 + data.Length];
@@ -156,14 +117,14 @@ namespace SNet_Client.Sockets
         public bool Send(long receivingId, byte[] data, int header, bool reliable) => l.Send(MakeDataWithHeader(data, header), receivingId, reliable);
         public void SendToAll(byte[] data, int header, bool reliable) => l.SendToAllCients(MakeDataWithHeader(data, header), reliable);
 
-        private void ReceiveData(QueuedData data)
+        private void ReceiveData(byte[] data, long sendingId)
         {
-            PacketReader packet = new PacketReader(data.data);
+            PacketReader packet = new PacketReader(data);
             try
             {
                 int Header = packet.ReadInt32();
                 DateTime sendTime = packet.ReadDateTime();
-                ReceivedPacketData receivedPacketData = new ReceivedPacketData(data.sendingId, sendTime, (int)(DateTime.UtcNow - sendTime).TotalMilliseconds);
+                ReceivedPacketData receivedPacketData = new ReceivedPacketData(sendingId, sendTime, (int)(DateTime.UtcNow - sendTime).TotalMilliseconds);
 
                 packetReceiver.ReadReceivedPacket(ref packet, Header, receivedPacketData);
             }

@@ -1,4 +1,9 @@
-﻿using UnityEngine;
+﻿using System.Runtime.InteropServices;
+using System;
+using System.IO;
+using System.Reflection;
+
+using UnityEngine;
 using BepInEx;
 using BepInEx.Logging;
 
@@ -18,14 +23,20 @@ namespace SNet_Client
         public Client _clientSide;
         public static ManualLogSource LogSource;
 
+
         private void Start()
         {
             LogSource = Logger;
+            LogSource.LogInfo(Paths.PluginPath);
+            DllLoader.LoadDll(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), Discord.Constants.DllName + ".dll"));
+            
 
             if (!Application.runInBackground)
                 Application.runInBackground = true;
 
-            _clientSide = new Client();
+            bool canarry = Config.Bind("a", "canarry", false).Value;
+
+            _clientSide = new Client(canarry);
 
             //Network Specific Scripts
             gameObject.AddComponent<EntityInitializer>();
@@ -75,6 +86,17 @@ namespace SNet_Client
         private void OnDestroy()
         {
             _clientSide.Disconnect();
+        }
+    }
+
+    public static class DllLoader
+    {
+        [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
+        private extern static IntPtr LoadLibrary(string librayName);
+
+        public static void LoadDll(string path)
+        {
+            LoadLibrary(path);
         }
     }
 }

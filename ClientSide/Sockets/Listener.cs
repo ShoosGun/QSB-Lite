@@ -12,114 +12,69 @@ namespace SNet_Client.Sockets
     public class Listener
     {
         private Discord.Discord discord;
-        private NetworkManager networkManager;
         private LobbyManager lobbyManager;
         private UserManager userManager;
 
-        private const long APPLICATION_ID = 1008107594516283493;
         private const long CLIENT_ID = 1008107594516283493;
 
+        public long CurrentlyConnectedLobby  { get; private set; }
+        public User CurrentUser { get; private set; }
 
-        public long currentlyConnectedLobby { get; private set; }
-        public User currentUser { get; private set; }
+        private Dictionary<long, User> ConnectedUsers;
 
-        private SNETConcurrentDictionary<long, ConnectedUser> ConnectedUsers;
-        private SNETConcurrentDictionary<ulong, long> ConnectedUsersPeerIdTable;
-
-        public Listener()
+        public Listener(string discordSDK = "0")
         {
-            var clientID = Environment.GetEnvironmentVariable("DISCORD_CLIENT_ID");
-            if (clientID == null)
-            {
-                clientID = "418559331265675294";
-            }
-            //discord = new Discord.Discord(Int64.Parse(clientID), (UInt64)Discord.CreateFlags.Default);
-            discord = new Discord.Discord(CLIENT_ID, (UInt64)Discord.CreateFlags.Default);
-            networkManager = discord.GetNetworkManager();
+            Environment.SetEnvironmentVariable("DISCORD_INSTANCE_ID", discordSDK);
+            discord = new Discord.Discord(CLIENT_ID, (UInt64)CreateFlags.Default);
+
             lobbyManager = discord.GetLobbyManager();
             userManager = discord.GetUserManager();
 
-            ConnectedUsers = new SNETConcurrentDictionary<long, ConnectedUser>();
-            ConnectedUsersPeerIdTable = new SNETConcurrentDictionary<ulong, long>();
-
+            ConnectedUsers = new Dictionary<long, User>();
             SetDiscordEvents();
         }
         private void SetDiscordEvents()
         {
-            //Adds our route uptade
-            networkManager.OnRouteUpdate += route =>
+            userManager.OnCurrentUserUpdate += () => 
             {
-                var txn = lobbyManager.GetMemberUpdateTransaction(currentlyConnectedLobby, currentUser.Id);
-                txn.SetMetadata("route", route);
-                lobbyManager.UpdateMember(currentlyConnectedLobby, currentUser.Id, txn, (result =>
-                {
-                    ClientMod.LogSource.LogWarning("Updated member route with result " + result);
-                }));
+                CurrentUser = userManager.GetCurrentUser();
             };
-
+            lobbyManager.OnMemberConnect += (lobbyId, userId) =>
+            {
+                ConnectedUsers.Add(userId, lobbyManager.GetMemberUser(lobbyId, userId));
+                OnMemberConnect?.Invoke(userId);
+            };
             lobbyManager.OnMemberDisconnect += (lobbyId, userId) =>
             {
-                if (ConnectedUsers.TryGetValue(userId, out ConnectedUser user))
-                {
-                    ConnectedUsers.Remove(userId);
-                    ConnectedUsersPeerIdTable.Remove(user.PeerId);
-                }
+                ConnectedUsers.Remove(userId);
             };
-            //Receives the new route from connected user and updates accordenly
-            lobbyManager.OnMemberUpdate += (lobbyId, userId) =>
+            lobbyManager.OnNetworkMessage += (lobbyId, userId, channelId, data) =>
             {
-                var rawPeerId = lobbyManager.GetMemberMetadataValue(lobbyId, userId, "peer_id");
-                var peerId = Convert.ToUInt64(rawPeerId);
-                var newRoute = lobbyManager.GetMemberMetadataValue(lobbyId, userId, "route");
-                networkManager.UpdatePeer(peerId, newRoute);
-
-                if (!ConnectedUsers.ContainsKey(userId))
-                {
-                    ConnectedUsers.Add(userId,
-                        new ConnectedUser() { User = lobbyManager.GetMemberUser(lobbyId, userId), PeerId = peerId });
-                    OnMemberConnect?.Invoke(userId);
-                    ConnectedUsersPeerIdTable.Add(peerId, userId);
-                }
-            };
-            networkManager.OnMessage += (peerId, channel, data) =>
-            {
-                if (ConnectedUsersPeerIdTable.TryGetValue(peerId, out long userId))
-                {
-                    OnReceiveData?.Invoke(userId, data);
-                }
+                ClientMod.LogSource.LogMessage($"Tamanho: {data.Length}");
+                OnReceiveData?.Invoke(userId, data);
             };
 
         }
+
         private void WhenConnectedToLobby(ref Lobby lobby)
         {
-            currentlyConnectedLobby = lobby.Id;
+            CurrentlyConnectedLobby = lobby.Id; 
+            lobbyManager.ConnectNetwork(lobby.Id);
+            lobbyManager.OpenNetworkChannel(lobby.Id, 0, true);
+            lobbyManager.OpenNetworkChannel(lobby.Id, 1, false);
 
-            var localPeerId = Convert.ToString(networkManager.GetPeerId());
-            var txn = lobbyManager.GetMemberUpdateTransaction(lobby.Id, currentUser.Id);
-            txn.SetMetadata("peer_id", localPeerId);
-            lobbyManager.UpdateMember(lobby.Id, currentUser.Id, txn, (result) =>
-            {
-                ClientMod.LogSource.LogWarning("Updated member peer id with result " + result);
-            });
+            OnConnection?.Invoke();
 
             //Get all clients already connected to the lobby
             var members = lobbyManager.GetMemberUsers(lobby.Id);
             foreach (var member in members)
             {
-                long userId = member.Id;
-                string rawPeerId = lobbyManager.GetMemberMetadataValue(lobby.Id, userId, "peer_id");
-                ulong userPeerId = Convert.ToUInt64(rawPeerId);
-                string route = lobbyManager.GetMemberMetadataValue(lobby.Id, userId, "route");
-
-                networkManager.OpenPeer(userPeerId, route);
-                networkManager.OpenChannel(userPeerId, 0, false);// Not realiable
-                networkManager.OpenChannel(userPeerId, 1, true); // Realiable
-
-                ConnectedUsers.Add(userId, new ConnectedUser() { User = member, PeerId = userPeerId });
-                ConnectedUsersPeerIdTable.Add(userPeerId, userId);
-                OnMemberConnect?.Invoke(userId);
+                if (member.Id != CurrentUser.Id)
+                {
+                    ConnectedUsers.Add(member.Id, member);
+                    OnMemberConnect?.Invoke(member.Id);
+                }
             }
-            OnConnection?.Invoke();
         }
         public void TryCreatingLobby(uint capacity = 5)
         {
@@ -136,7 +91,15 @@ namespace SNet_Client.Sockets
                 }
                 var secret = lobbyManager.GetLobbyActivitySecret(lobby.Id);
                 ClientMod.LogSource.LogInfo("Secret: " + secret);
-                WhenConnectedToLobby(ref lobby);
+                try
+                {
+                    WhenConnectedToLobby(ref lobby);
+                }
+                catch (Exception ex)
+                {
+                    ClientMod.LogSource.LogError($"Exception: {ex.Message} : {ex.StackTrace} - {ex.Source}");
+                    OnFailConnection?.Invoke();
+                }
             });
         } 
         public void TryConnect(string activitySecret)
@@ -153,7 +116,7 @@ namespace SNet_Client.Sockets
         }
         public void FlushAllMessages() 
         {
-            networkManager.Flush();
+            lobbyManager.FlushNetwork();
         }
         public void CheckForDiscordInformation() 
         {
@@ -164,8 +127,8 @@ namespace SNet_Client.Sockets
         {
             int channel = reliable ? 1 : 0; 
             foreach (var user in ConnectedUsers) 
-            {                
-                networkManager.SendMessage(user.Value.PeerId, (byte)channel, data);
+            {
+                lobbyManager.SendNetworkMessage(CurrentlyConnectedLobby, user.Value.Id, (byte)channel, data);
             }
         }
         public bool Send(byte[] data, long receivingId,bool reliable)
@@ -173,7 +136,7 @@ namespace SNet_Client.Sockets
             if (ConnectedUsers.TryGetValue(receivingId, out var user))
             {
                 int channel = reliable ? 1 : 0;
-                networkManager.SendMessage(user.PeerId, (byte)channel, data);
+                lobbyManager.SendNetworkMessage(CurrentlyConnectedLobby, user.Id, (byte)channel, data);
                 return true;
             }
             return false;
@@ -181,11 +144,10 @@ namespace SNet_Client.Sockets
 
         public void Disconnect()
         {
-            lobbyManager.DisconnectLobby(currentlyConnectedLobby, (result) =>
+            lobbyManager.DisconnectLobby(CurrentlyConnectedLobby, (result) =>
             {
                 OnDisconnection?.Invoke();
-
-                ConnectedUsersPeerIdTable.Clear();
+                //ConnectedUsersPeerIdTable.Clear();
                 ConnectedUsers.Clear();
             });
         }

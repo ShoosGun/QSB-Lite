@@ -57,9 +57,11 @@ namespace SNet_Client.PacketCouriers.Entities
             Client.GetClient().MemberDisconnection += OnMemberDisconnection;
             Client.GetClient().Disconnection += OnDisconnection;
         }
-        private void OnMemberConnection(long memberId)
+        private void OnMemberConnection(long memberId)//TODO a entidade do player não esta sendo enviada!
         {
-            NetworkedEntity[] ourEntities = InstantiadableGameObjectsPrefabHub.ownersDictionary.GetNetworkedEntities(Client.GetClient().GetUserId());
+            if (!InstantiadableGameObjectsPrefabHub.ownersDictionary.TryGetNetworkedEntities(Client.GetClient().GetUserId(),
+                out NetworkedEntity[] ourEntities))
+                return;
             
             for (int i = 0; i < ourEntities.Length; i++)
             {
@@ -115,10 +117,19 @@ namespace SNet_Client.PacketCouriers.Entities
             initializationData.Write(position);
             initializationData.Write(rotation);
 
-            buffer.WriteAsArray(initializationData.GetBytes());
+            buffer.Write(initializationData.GetBytes());
             return buffer.GetBytes();
         }
+        private void ReadEntityInstantiateData(ref PacketReader reader, ReceivedPacketData receivedPacketData)
+        {
+            int id = reader.ReadInt32();
+            string prefabName = reader.ReadString();
+            object[] intantiateData = reader.ReadObjectArray();
+            Vector3 position = reader.ReadVector3();
+            Quaternion rotation = reader.ReadQuaternion();
 
+            InstantiateEntityFromServer(prefabName, id, receivedPacketData.SendingId, position, rotation, intantiateData);
+        }
         private void InstantiateEntityFromServer(string prefabName, int ID, long ownerID, Vector3 position, Quaternion rotation, params object[] data)
         {
             if (!InstantiadableGameObjectsPrefabHub.instantiadableGOPrefabMethods.TryGetValue(prefabName, out InstantiadableGameObjectsPrefabHub.EntityPrefab prefab))
@@ -140,7 +151,7 @@ namespace SNet_Client.PacketCouriers.Entities
                 Destroy(networkedEntity);
             }
         }
-
+        
         public void DestroyEntity(NetworkedEntity networkedEntity)
         {
             if (networkedEntity.IsOurs())
@@ -150,8 +161,7 @@ namespace SNet_Client.PacketCouriers.Entities
                 buffer.Write(networkedEntity.id);
                 Client.GetClient().SendToAll(buffer.GetBytes(), HeaderValue, true);
             }
-        }
-        
+        }        
         private void ReceiveRemoveEntity(ref PacketReader reader, ReceivedPacketData receivedPacketData)
         {
             int id = reader.ReadInt32();
@@ -168,16 +178,7 @@ namespace SNet_Client.PacketCouriers.Entities
                 InstantiadableGameObjectsPrefabHub.idsGenerator.ReturnID(networkedEntity.id);
         }
 
-        private void ReadEntityInstantiateData(ref PacketReader reader, ReceivedPacketData receivedPacketData)
-        {
-            int id = reader.ReadInt32();
-            string prefabName = reader.ReadString();
-            object[] intantiateData = reader.ReadObjectArray();
-            Vector3 position = reader.ReadVector3();
-            Quaternion rotation = reader.ReadQuaternion();
-
-            InstantiateEntityFromServer(prefabName, id, receivedPacketData.SendingId, position, rotation, intantiateData);
-        }
+       
         public void SendEntityScriptsOnSerialization()
         {
             if (!InstantiadableGameObjectsPrefabHub.ownersDictionary.ContainsKey(Client.GetClient().GetUserId()))
@@ -202,12 +203,13 @@ namespace SNet_Client.PacketCouriers.Entities
             }
             if (amountOfEntitiesThatWrote > 0)
             {
-                PacketWriter writer = new PacketWriter();
-                writer.Write((byte)EntityInitializerHeaders.EntitySerialization);
                 PacketWriter desirializationData = new PacketWriter();
                 desirializationData.Write(amountOfEntitiesThatWrote);
                 desirializationData.Write(postFixWriter.GetBytes());
-                writer.WriteAsArray(desirializationData.GetBytes());
+
+                PacketWriter writer = new PacketWriter();
+                writer.Write((byte)EntityInitializerHeaders.EntitySerialization);
+                writer.Write(desirializationData.GetBytes());
 
                 Client.GetClient().SendToAll(writer.GetBytes(), HeaderValue, false);
             }
@@ -243,7 +245,6 @@ namespace SNet_Client.PacketCouriers.Entities
 
             PacketWriter writer = new PacketWriter();
             writer.Write((byte)EntityInitializerHeaders.EntityMessage);
-            writer.Write(entity.ownerId);
             writer.Write(entity.id);
             writer.Write(scriptID);
             writer.WriteAsArray(messageData);
